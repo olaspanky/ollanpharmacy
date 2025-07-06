@@ -126,7 +126,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
     try {
       if (type === "signup") {
-        const res = await fetch("/api/auth/signup", {
+        const res = await fetch("https://ollanbackend.vercel.app/api/auth/signup", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -147,7 +147,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
           setTimeout(() => router.push("/pages/shop"), 1000);
         }
       } else if (type === "signin") {
-        const res = await fetch("/api/auth/signin", {
+        const res = await fetch("https://ollanbackend.vercel.ap/api/auth/signin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -167,7 +167,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
           setTimeout(() => router.push("/pages/shop"), 1000);
         }
       } else if (type === "forgot-password") {
-        const res = await fetch("/api/auth/forgot-password", {
+        const res = await fetch("https://ollanbackend.vercel.app/api/auth/forgot-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: formData.email }),
@@ -186,7 +186,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         if (!token) {
           throw new Error("Reset token is missing");
         }
-        const res = await fetch("/api/auth/reset-password", {
+        const res = await fetch("https://ollanbackend.vercel.app/api/auth/reset-password", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({

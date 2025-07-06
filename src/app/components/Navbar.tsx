@@ -1,150 +1,250 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Search, Heart, ShoppingBag, ChevronDown, Menu, CircleX, Truck, Smartphone, User, LogOut } from 'lucide-react';
+import { Search, Heart, ShoppingBag, ChevronDown, Menu, X, User, LogOut } from 'lucide-react';
 import logo from "../../../public/ollogo.svg";
 import Link from "next/link";
-import { useAuth } from "../../context/AuthContext"; // Import useAuth hook
-import { useRouter } from "next/navigation"; // Import useRouter for navigation
+import { useAuth } from "../../context/AuthContext";
+import { useRouter } from "next/navigation";
 
 const navLinks = [
   { name: "Home", href: "/" },
+  { name: "Products", href: "/products" },
+  { name: "Categories", href: "/categories" },
+  { name: "About", href: "/about" },
+  { name: "Contact", href: "/contact" },
+];
+
+const categories = [
+  "All Categories",
+  "Anti-malaria",
+  "Vitamins and Supplements", 
+  "Pain reliever",
+  "Anti Biotics",
+  "Anti-Asthma",
+  "Baby care",
+  "First Aid",
+  "Skincare",
+  "Dental Care"
 ];
 
 const Navbar = ({ links = navLinks }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { user, logout } = useAuth(); // Access user and logout from AuthContext
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const { user, logout } = useAuth();
   const router = useRouter();
+  const dropdownRef = useRef(null);
 
-  console.log("user is", user)
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !(dropdownRef.current as HTMLDivElement).contains(event.target as Node)
+      ) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMobileMenuOpen]);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [router]);
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const handleLogout = () => {
-    logout(); // Call logout from AuthContext
-    setIsMobileMenuOpen(false); // Close mobile menu if open
-    router.push("/pages/signin"); // Redirect to signin page
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setIsMobileMenuOpen(false);
+      router.push("/pages/signin");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
+
+  interface HandleSearchEvent extends React.FormEvent<HTMLFormElement> {}
+
+  interface NavbarProps {
+    links?: { name: string; href: string }[];
+  }
+
+  const handleSearch = (e: HandleSearchEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery)}&category=${encodeURIComponent(selectedCategory)}`);
+    }
+  };
+
+  interface UserType {
+    name?: string;
+    [key: string]: any;
+  }
+
+  const getUserInitials = (name: string | undefined): string => {
+    if (!name) return "";
+    const names = name.split(" ");
+    return names.length > 1 
+      ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
+      : name[0].toUpperCase();
   };
 
   return (
-    <main className="bg-white shadow-sm sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4">
+    <header className="bg-white shadow-sm sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Header */}
         <div className="flex items-center justify-between py-4">
           {/* Logo */}
-          <div className="flex items-center">
-            <Link href="/">
-              <div className="p-2 rounded-lg mr-3">
-                <Image src={logo} alt="Ollan Logo" width={80} height={80} className="lg:w-20 w-12" />
+          <div className="flex items-center flex-shrink-0">
+            <Link href="/" className="flex items-center">
+              <div className="p-2 rounded-lg transition-transform hover:scale-105">
+                <Image 
+                  src={logo} 
+                  alt="Ollan Logo" 
+                  width={80} 
+                  height={80} 
+                  className="lg:w-20 w-12 h-auto" 
+                  priority
+                />
               </div>
             </Link>
           </div>
 
           {/* Search Bar */}
-          <div className="hidden md:flex items-center bg-gray-50 rounded-full px-4 py-2 w-full max-w-md">
-            <select className="bg-transparent border-none outline-none text-gray-600 text-sm">
-              <option>All Categories</option>
-              <option>Anti-malaria</option>
-              <option>Vitamins and Supplements</option>
-              <option>Pain reliever</option>
-              <option>Anti Biotics</option>
-              <option>Anti-Asthma</option>
-              <option>Baby care</option>
-            </select>
-            <div className="h-4 w-px bg-gray-300 mx-3"></div>
-            <input
-              type="text"
-              placeholder="Search medicine, medical products"
-              className="bg-transparent border-none outline-none flex-1 text-sm"
-            />
-            <button className="bg-red-500 text-white p-2 rounded-full ml-2">
-              <Search className="w-4 h-4" />
-            </button>
+          <div className="hidden md:flex items-center flex-1 max-w-2xl mx-8">
+            <form onSubmit={handleSearch} className="w-full">
+              <div className="flex items-center bg-gray-50 rounded-full px-4 py-2 border border-gray-200 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 transition-all">
+                <select 
+                  className="bg-transparent border-none outline-none text-gray-600 text-sm pr-2"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                >
+                  {categories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </select>
+                <div className="h-4 w-px bg-gray-300 mx-3"></div>
+                <input
+                  type="text"
+                  placeholder="Search medicine, medical products..."
+                  className="bg-transparent border-none outline-none flex-1 text-sm placeholder-gray-500"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button 
+                  type="submit"
+                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full ml-2 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/50"
+                  aria-label="Search"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
+              </div>
+            </form>
           </div>
 
           {/* Right Icons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Heart className="w-6 h-6 text-gray-600 cursor-pointer" />
-            <ShoppingBag className="w-6 h-6 text-gray-600 cursor-pointer" />
+            <button 
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Wishlist"
+            >
+              <Heart className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
+            </button>
+            <button 
+              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+              aria-label="Shopping cart"
+            >
+              <ShoppingBag className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
+            </button>
+            
+            {/* User Dropdown */}
             <div className="relative group">
-              <div className="flex items-center cursor-pointer">
-                <div className="w-8 h-8 bg-gray-300 rounded-full mr-2 flex items-center justify-center">
+              <button className="flex items-center cursor-pointer p-2 rounded-full hover:bg-gray-100 transition-colors">
+                <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-red-600 rounded-full mr-2 flex items-center justify-center shadow-sm">
                   {user ? (
-                    <span className="text-white font-medium">
-                      {user.name ? user.name[0].toUpperCase() : <User className="w-5 h-5" />}
+                    <span className="text-white font-medium text-sm">
+                      {getUserInitials(user.name)}
                     </span>
                   ) : (
-                    <User className="w-5 h-5 text-gray-600" />
+                    <User className="w-5 h-5 text-white" />
                   )}
                 </div>
-                <span className="text-gray-600 font-medium">
-                  {user ? user.name || "Profile" : "Account"}
+                <span className="text-gray-700 font-medium hidden lg:block">
+                  {user ? (user.name || "Profile") : "Account"}
                 </span>
-                <ChevronDown className="w-4 h-4 text-gray-600 ml-1" />
-              </div>
+                <ChevronDown className="w-4 h-4 text-gray-600 ml-1 transition-transform group-hover:rotate-180" />
+              </button>
+              
               {/* Dropdown Menu */}
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg hidden group-hover:block z-10">
-                <ul className="py-2">
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20">
+                <div className="py-2">
                   {user ? (
                     <>
-                      <li>
-                        <Link
-                          href="/pages/profile"
-                          className="block px-4 py-2 text-gray-600 hover:bg-gray-100"
-                        >
-                          Profile
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          href="/admin/add-product"
-                          className="block px-4 py-2 text-gray-600 hover:bg-gray-100"
-                        >
-                          Add item
-                        </Link>
-                      </li>
-                      <li>
-                        <button
-                          onClick={handleLogout}
-                          className="w-full text-left px-4 py-2 text-gray-600 hover:bg-gray-100 flex items-center gap-2"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Logout
-                        </button>
-                      </li>
+                      <Link
+                        href="/pages/profile"
+                        className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <User className="w-4 h-4 mr-2" />
+                        Profile
+                      </Link>
+                      <Link
+                        href="/admin/add-product"
+                        className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <ShoppingBag className="w-4 h-4 mr-2" />
+                        Add Product
+                      </Link>
+                      <hr className="my-2" />
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
                     </>
                   ) : (
                     <>
-                      <li>
-                        <Link
-                          href="/pages/signin"
-                          className="block px-4 py-2 text-gray-600 hover:bg-gray-100"
-                        >
-                          Sign In
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          href="/pages/signup"
-                          className="block px-4 py-2 text-gray-600 hover:bg-gray-100"
-                        >
-                          Sign Up
-                        </Link>
-                      </li>
+                      <Link
+                        href="/pages/signin"
+                        className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Sign In
+                      </Link>
+                      <Link
+                        href="/pages/signup"
+                        className="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        Sign Up
+                      </Link>
                     </>
                   )}
-                </ul>
+                </div>
               </div>
             </div>
           </div>
 
           {/* Mobile Hamburger */}
           <div className="md:hidden flex items-center">
-            <button onClick={toggleMobileMenu}>
+            <button 
+              onClick={toggleMobileMenu}
+              className="p-2 rounded-md hover:bg-gray-100 transition-colors"
+              aria-label="Toggle mobile menu"
+            >
               {isMobileMenuOpen ? (
-                <CircleX className="w-6 h-6 text-gray-600" />
+                <X className="w-6 h-6 text-gray-600" />
               ) : (
                 <Menu className="w-6 h-6 text-gray-600" />
               )}
@@ -152,93 +252,131 @@ const Navbar = ({ links = navLinks }) => {
           </div>
         </div>
 
+        {/* Mobile Search Bar */}
+        <div className="md:hidden pb-4">
+          <form onSubmit={handleSearch}>
+            <div className="flex items-center bg-gray-50 rounded-full px-4 py-2 border border-gray-200 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 transition-all">
+              <input
+                type="text"
+                placeholder="Search medicine, medical products..."
+                className="bg-transparent border-none outline-none flex-1 text-sm placeholder-gray-500"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              <button 
+                type="submit"
+                className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full ml-2 transition-colors"
+                aria-label="Search"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            </div>
+          </form>
+        </div>
+
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <nav className="md:hidden bg-white border-t border-gray-200">
-            <ul className="flex flex-col items-left py-4">
+          <nav 
+            ref={dropdownRef}
+            className="md:hidden bg-white border-t border-gray-200 animate-in slide-in-from-top duration-200"
+          >
+            <div className="py-4 space-y-2">
               {links.map((link) => (
-                <li key={link.name} className="py-2">
-                  <Link
-                    href={link.href}
-                    className="text-gray-600 hover:text-red-500 font-medium text-base"
-                    onClick={toggleMobileMenu}
-                  >
-                    {link.name}
-                  </Link>
-                </li>
+                <Link
+                  key={link.name}
+                  href={link.href}
+                  className="block px-4 py-2 text-gray-700 hover:text-red-500 hover:bg-gray-50 font-medium transition-colors rounded-md mx-2"
+                  onClick={toggleMobileMenu}
+                >
+                  {link.name}
+                </Link>
               ))}
+              
               {/* Mobile Icons */}
-              <li className="flex items-center space-x-4 py-2">
-                <Heart className="w-6 h-6 text-gray-600 cursor-pointer" />
-                <ShoppingBag className="w-6 h-6 text-gray-600 cursor-pointer" />
-              </li>
+              <div className="flex items-center space-x-4 px-4 py-2">
+                <button 
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="Wishlist"
+                >
+                  <Heart className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
+                </button>
+                <button 
+                  className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                  aria-label="Shopping cart"
+                >
+                  <ShoppingBag className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
+                </button>
+              </div>
+              
               {/* Mobile User Menu */}
-              <li className="py-2">
-                <div className="flex items-center">
-                  <div className="w-8 h-8 bg-gray-300 rounded-full mr-2 flex items-center justify-center">
+              <div className="px-4 py-2 border-t border-gray-100 mt-2">
+                <div className="flex items-center mb-3">
+                  <div className="w-8 h-8 bg-gradient-to-r from-red-500 to-red-600 rounded-full mr-3 flex items-center justify-center shadow-sm">
                     {user ? (
-                      <span className="text-white font-medium">
-                        {user.name ? user.name[0].toUpperCase() : <User className="w-5 h-5" />}
+                      <span className="text-white font-medium text-sm">
+                        {getUserInitials(user.name)}
                       </span>
                     ) : (
-                      <User className="w-5 h-5 text-gray-600" />
+                      <User className="w-5 h-5 text-white" />
                     )}
                   </div>
-                  <span className="text-gray-600 font-medium">
-                    {user ? user.name || "Profile" : "Account"}
+                  <span className="text-gray-700 font-medium">
+                    {user ? (user.name || "Profile") : "Account"}
                   </span>
                 </div>
-                <ul className="pl-4 mt-2">
+                
+                <div className="space-y-1">
                   {user ? (
                     <>
-                      <li>
-                        <Link
-                          href="/pages/profile"
-                          className="block py-2 text-gray-600 hover:text-red-500"
-                          onClick={toggleMobileMenu}
-                        >
-                          Profile
-                        </Link>
-                      </li>
-                      <li>
-                        <button
-                          onClick={handleLogout}
-                          className="w-full text-left py-2 text-gray-600 hover:text-red-500 flex items-center gap-2"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Logout
-                        </button>
-                      </li>
+                      <Link
+                        href="/pages/profile"
+                        className="flex items-center px-3 py-2 text-gray-700 hover:text-red-500 hover:bg-gray-50 rounded-md transition-colors"
+                        onClick={toggleMobileMenu}
+                      >
+                        <User className="w-4 h-4 mr-2" />
+                        Profile
+                      </Link>
+                      <Link
+                        href="/admin/add-product"
+                        className="flex items-center px-3 py-2 text-gray-700 hover:text-red-500 hover:bg-gray-50 rounded-md transition-colors"
+                        onClick={toggleMobileMenu}
+                      >
+                        <ShoppingBag className="w-4 h-4 mr-2" />
+                        Add Product
+                      </Link>
+                      <button
+                        onClick={handleLogout}
+                        className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-md transition-colors"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Logout
+                      </button>
                     </>
                   ) : (
                     <>
-                      <li>
-                        <Link
-                          href="/pages/signin"
-                          className="block py-2 text-gray-600 hover:text-red-500"
-                          onClick={toggleMobileMenu}
-                        >
-                          SignIn
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          href="/pages/signup"
-                          className="block py-2 text-gray-600 hover:text-red-500"
-                          onClick={toggleMobileMenu}
-                        >
-                          SignUp
-                        </Link>
-                      </li>
+                      <Link
+                        href="/pages/signin"
+                        className="block px-3 py-2 text-gray-700 hover:text-red-500 hover:bg-gray-50 rounded-md transition-colors"
+                        onClick={toggleMobileMenu}
+                      >
+                        Sign In
+                      </Link>
+                      <Link
+                        href="/pages/signup"
+                        className="block px-3 py-2 text-gray-700 hover:text-red-500 hover:bg-gray-50 rounded-md transition-colors"
+                        onClick={toggleMobileMenu}
+                      >
+                        Sign Up
+                      </Link>
                     </>
                   )}
-                </ul>
-              </li>
-            </ul>
+                </div>
+              </div>
+            </div>
           </nav>
         )}
       </div>
-    </main>
+    </header>
   );
 };
 
