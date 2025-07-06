@@ -1,4 +1,4 @@
-const baseURL: string = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const baseURL: string = "https://ollanbackend.vercel.app/";
 
 // Helper function to handle responses
 const handleResponse = async (response: Response): Promise<any> => {
