@@ -8,6 +8,7 @@ import logo from "../../../public/ollogo.svg";
 import { useAuth } from "../../context/AuthContext";
 import { Product, Cart, CartItem } from "../../types";
 import { useRouter } from "next/navigation";
+import api from "@/src/lib/api";
 
 // Paystack type declaration
 interface PaystackPop {
@@ -114,14 +115,7 @@ const PharmacyApp: React.FC = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const res = await fetch("https://ollanbackend.vercel.app/api/products", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to fetch products");
-        }
+        const { data } = await api.get("/api/products");
         setProducts(data);
         const uniqueCategories = [
           "All Category",
@@ -136,14 +130,7 @@ const PharmacyApp: React.FC = () => {
     const fetchCart = async () => {
       if (user) {
         try {
-          const res = await fetch("https://ollanbackend.vercel.app/api/cart", {
-            method: "GET",
-            headers: { "Content-Type": "application/json" },
-          });
-          const data = await res.json();
-          if (!res.ok) {
-            throw new Error(data.message || "Failed to fetch cart");
-          }
+          const { data } = await api.get("/api/cart");
           cartDispatch({ type: "SET_CART", payload: data.items || [] });
         } catch (error: any) {
           console.error("Error fetching cart:", error.message || "Unknown error");
@@ -178,8 +165,6 @@ const PharmacyApp: React.FC = () => {
   );
   const allProducts = searchedProducts;
 
-  console.log("otcprod is", otcProducts);
-
   // Calculate cart totals
   const cartTotal = cart.reduce((total, item) => total + item.productId.price * item.quantity, 0);
   const deliveryFee = cartTotal > 0 ? 1000 : 0;
@@ -200,15 +185,10 @@ const PharmacyApp: React.FC = () => {
   const handleAddToCart = async () => {
     if (selectedProduct && quantity > 0) {
       try {
-        const res = await fetch("https://ollanbackend.vercel.app/api/cart/add", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ productId: selectedProduct._id, quantity }),
+        const { data } = await api.post("/api/cart/add", {
+          productId: selectedProduct._id,
+          quantity,
         });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to add to cart");
-        }
         cartDispatch({
           type: "ADD_ITEM",
           payload: { productId: selectedProduct, quantity },
@@ -256,18 +236,10 @@ const PharmacyApp: React.FC = () => {
 
     // Create order in backend
     try {
-      const res = await fetch("https://ollanbackend.vercel.app/api/orders/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customerInfo,
-          prescriptionUrl,
-        }),
+      const { data } = await api.post("/api/orders/create", {
+        customerInfo,
+        prescriptionUrl,
       });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Failed to create order");
-      }
       const orderId = data.order._id;
 
       const handler = window.PaystackPop.setup({
@@ -302,15 +274,10 @@ const PharmacyApp: React.FC = () => {
         },
         callback: async (response: any) => {
           try {
-            const res = await fetch("https://ollanbackend.vercel.app/api/orders/verify-payment", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ reference: response.reference, orderId }),
+            const { data } = await api.post("/api/orders/verify-payment", {
+              reference: response.reference,
+              orderId,
             });
-            const data = await res.json();
-            if (!res.ok) {
-              throw new Error(data.message || "Failed to verify payment");
-            }
             setIsProcessing(false);
             setOrderComplete(true);
             cartDispatch({ type: "CLEAR_CART" });
@@ -469,14 +436,7 @@ const PharmacyApp: React.FC = () => {
 
     const removeFromCart = async (productId: string) => {
       try {
-        const res = await fetch(`https://ollanbackend.vercel.app/api/cart/remove/${productId}`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to remove item");
-        }
+        const { data } = await api.delete(`/api/cart/remove/${productId}`);
         cartDispatch({ type: "REMOVE_ITEM", payload: productId });
       } catch (error: any) {
         alert("Error: " + (error.message || "Failed to remove item"));
