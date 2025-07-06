@@ -147,7 +147,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
           setTimeout(() => router.push("/pages/shop"), 1000);
         }
       } else if (type === "signin") {
-        const res = await fetch("https://ollanbackend.vercel.ap/api/auth/signin", {
+        const res = await fetch("https://ollanbackend.vercel.app/api/auth/signin", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
