@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation"; // Removed useSearchParams
 import { useState, useEffect, useRef } from "react";
 import { Eye, EyeOff, Lock, Mail, User, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
@@ -31,7 +31,6 @@ type FormErrors = {
 
 const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { setUser } = useAuth();
 
   const [formData, setFormData] = useState<FormData>({ email: "", password: "", confirmPassword: "", name: "" });
@@ -181,7 +180,9 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         showNotification("success", "Password reset email sent! Check your inbox.");
         setFormData({ email: "", password: "", confirmPassword: "", name: "" });
       } else if (type === "reset-password") {
-        const token = searchParams.get("token");
+        // Replaced searchParams.get("token") with URLSearchParams
+        const queryParams = new URLSearchParams(window.location.search);
+        const token = queryParams.get("token");
         if (!token) {
           throw new Error("Reset token is missing");
         }
@@ -223,7 +224,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
     if (/[0-9]/.test(password)) strength++;
     if (/[^A-Za-z0-9]/.test(password)) strength++;
 
-    const  labels = ["Very Weak", "Weak", "Fair", "Good", "Strong"];
+    const labels = ["Very Weak", "Weak", "Fair", "Good", "Strong"];
     const colors = ["bg-red-500", "bg-orange-500", "bg-yellow-500", "bg-blue-500", "bg-green-500"];
 
     return {
@@ -453,7 +454,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
             {type === "signup" && (
               <div className="text-gray-600 text-sm">
-                Already have an account?{" "}
+                Already have an account Stuart
                 <button
                   onClick={() => router.push("/pages/signin")}
                   className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
