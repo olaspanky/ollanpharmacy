@@ -1,0 +1,21 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "next.config.js",
+      "use": "@vercel/next",
+      "config": {
+        "typescript": {
+          "ignoreBuildErrors": true
+        }
+      }
+    }
+  ],
+  "outputDirectory": ".next",
+  "installCommand": "npm install",
+  "buildCommand": "next build",
+  "devCommand": "next dev",
+  "framework": "nextjs",
+  "cleanUrls": true,
+  "trailingSlash": false
+}
