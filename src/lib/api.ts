@@ -1,4 +1,4 @@
-const baseURL: string = "https://ollanbackend.vercel.app/";
+const baseURL: string = "https://ollanbackend.vercel.app";
 
 // Helper function to handle responses
 const handleResponse = async (response: Response): Promise<any> => {
