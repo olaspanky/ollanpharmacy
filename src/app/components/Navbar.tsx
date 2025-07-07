@@ -1,7 +1,8 @@
 "use client";
+
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Search, Heart, ShoppingBag, ChevronDown, Menu, X, User, LogOut } from 'lucide-react';
+import { Search, Heart, ShoppingBag, ChevronDown, Menu, X, User, LogOut, Gift } from "lucide-react";
 import logo from "../../../public/ollogo.svg";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
@@ -18,41 +19,41 @@ const navLinks = [
 const categories = [
   "All Categories",
   "Anti-malaria",
-  "Vitamins and Supplements", 
+  "Vitamins and Supplements",
   "Pain reliever",
   "Anti Biotics",
   "Anti-Asthma",
   "Baby care",
   "First Aid",
   "Skincare",
-  "Dental Care"
+  "Dental Care",
 ];
 
-const Navbar = ({ links = navLinks }) => {
+const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({ links = navLinks }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const { user, logout } = useAuth();
   const router = useRouter();
-  const dropdownRef = useRef(null);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         dropdownRef.current &&
-        !(dropdownRef.current as HTMLDivElement).contains(event.target as Node)
+        !dropdownRef.current.contains(event.target as Node)
       ) {
         setIsMobileMenuOpen(false);
       }
     };
 
     if (isMobileMenuOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [isMobileMenuOpen]);
 
@@ -75,28 +76,17 @@ const Navbar = ({ links = navLinks }) => {
     }
   };
 
-  interface HandleSearchEvent extends React.FormEvent<HTMLFormElement> {}
-
-  interface NavbarProps {
-    links?: { name: string; href: string }[];
-  }
-
-  const handleSearch = (e: HandleSearchEvent) => {
+  const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery)}&category=${encodeURIComponent(selectedCategory)}`);
     }
   };
 
-  interface UserType {
-    name?: string;
-    [key: string]: any;
-  }
-
-  const getUserInitials = (name: string | undefined): string => {
+  const getUserInitials = (name?: string): string => {
     if (!name) return "";
     const names = name.split(" ");
-    return names.length > 1 
+    return names.length > 1
       ? `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase()
       : name[0].toUpperCase();
   };
@@ -110,12 +100,12 @@ const Navbar = ({ links = navLinks }) => {
           <div className="flex items-center flex-shrink-0">
             <Link href="/" className="flex items-center">
               <div className="p-2 rounded-lg transition-transform hover:scale-105">
-                <Image 
-                  src={logo} 
-                  alt="Ollan Logo" 
-                  width={80} 
-                  height={80} 
-                  className="lg:w-20 w-12 h-auto" 
+                <Image
+                  src={logo}
+                  alt="Ollan Logo"
+                  width={80}
+                  height={80}
+                  className="lg:w-20 w-12 h-auto"
                   priority
                 />
               </div>
@@ -126,13 +116,15 @@ const Navbar = ({ links = navLinks }) => {
           <div className="hidden md:flex items-center flex-1 max-w-2xl mx-8">
             <form onSubmit={handleSearch} className="w-full">
               <div className="flex items-center bg-gray-50 rounded-full px-4 py-2 border border-gray-200 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 transition-all">
-                <select 
+                <select
                   className="bg-transparent border-none outline-none text-gray-600 text-sm pr-2"
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                 >
-                  {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
                   ))}
                 </select>
                 <div className="h-4 w-px bg-gray-300 mx-3"></div>
@@ -143,7 +135,7 @@ const Navbar = ({ links = navLinks }) => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
-                <button 
+                <button
                   type="submit"
                   className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full ml-2 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/50"
                   aria-label="Search"
@@ -156,19 +148,19 @@ const Navbar = ({ links = navLinks }) => {
 
           {/* Right Icons */}
           <div className="hidden md:flex items-center space-x-4">
-            <button 
+            <button
               className="p-2 rounded-full hover:bg-gray-100 transition-colors"
               aria-label="Wishlist"
             >
               <Heart className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
             </button>
-            <button 
+            <button
               className="p-2 rounded-full hover:bg-gray-100 transition-colors"
               aria-label="Shopping cart"
             >
               <ShoppingBag className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
             </button>
-            
+
             {/* User Dropdown */}
             <div className="relative group">
               <button className="flex items-center cursor-pointer p-2 rounded-full hover:bg-gray-100 transition-colors">
@@ -186,7 +178,7 @@ const Navbar = ({ links = navLinks }) => {
                 </span>
                 <ChevronDown className="w-4 h-4 text-gray-600 ml-1 transition-transform group-hover:rotate-180" />
               </button>
-              
+
               {/* Dropdown Menu */}
               <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-20">
                 <div className="py-2">
@@ -200,12 +192,30 @@ const Navbar = ({ links = navLinks }) => {
                         Profile
                       </Link>
                       <Link
-                        href="/admin/add-product"
+                        href="/pages/orders"
                         className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
                       >
-                        <ShoppingBag className="w-4 h-4 mr-2" />
-                        Add Product
+                        <Gift className="w-4 h-4 mr-2" />
+                        My Orders
                       </Link>
+                      {user.role === "admin" && (
+                        <>
+                          <Link
+                            href="/admin/update-product"
+                            className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <ShoppingBag className="w-4 h-4 mr-2" />
+                            Manage Products
+                          </Link>
+                          <Link
+                            href="/admin/add-product"
+                            className="flex items-center px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+                          >
+                            <ShoppingBag className="w-4 h-4 mr-2" />
+                            Add Products
+                          </Link>
+                        </>
+                      )}
                       <hr className="my-2" />
                       <button
                         onClick={handleLogout}
@@ -238,7 +248,7 @@ const Navbar = ({ links = navLinks }) => {
 
           {/* Mobile Hamburger */}
           <div className="md:hidden flex items-center">
-            <button 
+            <button
               onClick={toggleMobileMenu}
               className="p-2 rounded-md hover:bg-gray-100 transition-colors"
               aria-label="Toggle mobile menu"
@@ -263,7 +273,7 @@ const Navbar = ({ links = navLinks }) => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <button 
+              <button
                 type="submit"
                 className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full ml-2 transition-colors"
                 aria-label="Search"
@@ -276,7 +286,7 @@ const Navbar = ({ links = navLinks }) => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <nav 
+          <nav
             ref={dropdownRef}
             className="md:hidden bg-white border-t border-gray-200 animate-in slide-in-from-top duration-200"
           >
@@ -291,23 +301,23 @@ const Navbar = ({ links = navLinks }) => {
                   {link.name}
                 </Link>
               ))}
-              
+
               {/* Mobile Icons */}
               <div className="flex items-center space-x-4 px-4 py-2">
-                <button 
+                <button
                   className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                   aria-label="Wishlist"
                 >
                   <Heart className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
                 </button>
-                <button 
+                <button
                   className="p-2 rounded-full hover:bg-gray-100 transition-colors"
                   aria-label="Shopping cart"
                 >
                   <ShoppingBag className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
                 </button>
               </div>
-              
+
               {/* Mobile User Menu */}
               <div className="px-4 py-2 border-t border-gray-100 mt-2">
                 <div className="flex items-center mb-3">
@@ -324,7 +334,7 @@ const Navbar = ({ links = navLinks }) => {
                     {user ? (user.name || "Profile") : "Account"}
                   </span>
                 </div>
-                
+
                 <div className="space-y-1">
                   {user ? (
                     <>
@@ -337,13 +347,33 @@ const Navbar = ({ links = navLinks }) => {
                         Profile
                       </Link>
                       <Link
-                        href="/admin/add-product"
+                        href="/pages/orders"
                         className="flex items-center px-3 py-2 text-gray-700 hover:text-red-500 hover:bg-gray-50 rounded-md transition-colors"
                         onClick={toggleMobileMenu}
                       >
-                        <ShoppingBag className="w-4 h-4 mr-2" />
-                        Add Product
+                        <Gift className="w-4 h-4 mr-2" />
+                        My Orders
                       </Link>
+                      {user.role === "admin" && (
+                        <>
+                          <Link
+                            href="/admin/update-product"
+                            className="flex items-center px-3 py-2 text-gray-700 hover:text-red-500 hover:bg-gray-50 rounded-md transition-colors"
+                            onClick={toggleMobileMenu}
+                          >
+                            <ShoppingBag className="w-4 h-4 mr-2" />
+                            Manage Products
+                          </Link>
+                          <Link
+                            href="/admin/add-product"
+                            className="flex items-center px-3 py-2 text-gray-700 hover:text-red-500 hover:bg-gray-50 rounded-md transition-colors"
+                            onClick={toggleMobileMenu}
+                          >
+                            <ShoppingBag className="w-4 h-4 mr-2" />
+                            Add Products
+                          </Link>
+                        </>
+                      )}
                       <button
                         onClick={handleLogout}
                         className="w-full text-left px-3 py-2 text-red-600 hover:bg-red-50 flex items-center gap-2 rounded-md transition-colors"
