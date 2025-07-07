@@ -137,12 +137,13 @@ const PharmacyWebsite = () => {
               </h2>
 
               <div className="flex space-x-4 mb-8">
-                <button
-                  onClick={handleOpenModal}
-                  className="bg-red-500 text-white p-2 lg:px-6 lg:py-3 rounded-full font-semibold flex items-center hover:bg-red-600 transition-colors"
-                >
-                  Shop now →
-                </button>
+              <Link href="/pages/shop">
+  <button
+    className="bg-red-500 text-white p-2 lg:px-6 lg:py-3 rounded-full font-semibold flex items-center hover:bg-red-600 transition-colors"
+  >
+    Shop now →
+  </button>
+</Link>
                 <button
                   onClick={handleOpenModal}
                   className="border-2 border-red-500 text-red-500 p-2 lg:px-6 lg:py-3 rounded-full font-semibold flex items-center hover:bg-red-50 transition-colors"
