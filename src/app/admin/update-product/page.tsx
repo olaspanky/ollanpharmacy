@@ -338,7 +338,7 @@ const ProductManagement: React.FC = () => {
         Object.keys(productData).forEach(key => {
           const field = key as keyof Product;
           const value = productData[field];
-          if (value !== undefined && value !== product[field]) {
+          if (value !== undefined && value !== null && value !== product[field]) {
             formData.append(key, value.toString());
             hasChanges = true;
           }
