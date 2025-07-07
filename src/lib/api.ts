@@ -1,5 +1,5 @@
 // src/utils/api.ts
-const baseURL: string = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const baseURL: string = process.env.NEXT_PUBLIC_API_URL || "https://ollanbackend.vercel.app";
 
 interface ApiError {
   message?: string;
