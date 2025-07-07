@@ -79,32 +79,35 @@ const ProductManagement: React.FC = () => {
   const [isCreating, setIsCreating] = useState<boolean>(false);
 
   // Base URL for backend
-  const API_URL = 'http://localhost:5000/api/products';
+  const API_URL = 'https://ollanbackend.vercel.app/api/products/';
 
   // Fetch products on component mount
   useEffect(() => {
     fetchProducts();
   }, []);
 
-  const fetchProducts = async () => {
-    setLoading(true);
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        toast.error('Please log in to access products');
-        setLoading(false);
-        return;
-      }
-      const response = await axios.get<Product[]>(API_URL, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setProducts(response.data);
+const fetchProducts = async () => {
+  setLoading(true);
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      toast.error('Please log in to access products');
       setLoading(false);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to fetch products');
-      setLoading(false);
+      return;
     }
-  };
+    console.log('Fetching from:', API_URL); // Debug log
+    const response = await axios.get(API_URL, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    console.log('Response:', response.data); // Debug log
+    setProducts(response.data);
+    setLoading(false);
+  } catch (error: any) {
+    console.error('Error fetching products:', error); // Debug log
+    toast.error(error.response?.data?.message || 'Failed to fetch products');
+    setLoading(false);
+  }
+};
 
   // Utility function to validate and parse numeric values
   const parseNumericValue = (value: string): number | null => {

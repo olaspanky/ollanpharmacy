@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
 import { User } from "../../types";
+import api from "@/src/lib/api";
 
 const ManageUsers: React.FC = () => {
   const { user } = useAuth();
@@ -21,7 +22,7 @@ const ManageUsers: React.FC = () => {
     const fetchUsers = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch("/api/users", {
+        const res = await fetch("https://ollanbackend.vercel.app/api/users", {
           method: "GET",
           headers: { "Content-Type": "application/json" },
         });
@@ -43,7 +44,7 @@ const ManageUsers: React.FC = () => {
   const handleRoleChange = async (userId: string, role: "customer" | "admin") => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/user/role", {
+      const res = await fetch("https://ollanbackend.vercel.app/api/user/role", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, role }),
