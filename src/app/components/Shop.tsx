@@ -1,6 +1,6 @@
 "use client"; // Added "use client" directive for Next.js client component
 
-import React, { useState, useRef, useEffect, useReducer } from "react";
+import React, { useState, useRef, useEffect, useReducer, useMemo, useCallback } from "react";
 import { ShoppingCart, Plus, Minus, X, CreditCard, Phone, User, Search, Upload, UploadCloud, Home, Mail } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -696,7 +696,7 @@ const PharmacyApp: React.FC = () => {
   };
 
   // Updated CheckoutModal to include only name, email, phone, delivery option, pickup location, prescription
-const CheckoutModal = () => {
+ const CheckoutModal = () => {
   const { user } = useAuth();
   const modalRef = useRef<HTMLDivElement>(null);
   const [estimatedDelivery, setEstimatedDelivery] = useState<string>("");
