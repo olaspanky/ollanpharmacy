@@ -443,7 +443,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
                 <div className="text-gray-600 text-sm">
                   Don't have an account?{" "}
                   <button
-                    onClick={() => router.push("/signup")}
+                    onClick={() => router.push("/pages/signup")}
                     className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
                   >
                     Sign up

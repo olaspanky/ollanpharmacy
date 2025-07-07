@@ -365,7 +365,7 @@ const PharmacyApp: React.FC = () => {
           </div>
           <div className="flex items-center space-x-4 mb-4">
             <img
-              src={`https://ollanbackend.vercel.app/${selectedProduct.image}`}
+              src={`${selectedProduct.image}`}
               alt={selectedProduct.name}
               className="w-16 h-16 object-contain bg-gray-50 rounded"
             />
@@ -910,7 +910,7 @@ const PharmacyApp: React.FC = () => {
                 >
                   <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
                     <img
-                      src={`https://ollanbackend.vercel.app${product.image}`}
+                      src={`${product.image}`}
                       alt={product.name}
                       className="h-40 object-contain max-w-full"
                       loading="lazy"
@@ -961,7 +961,7 @@ const PharmacyApp: React.FC = () => {
               >
                 <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
                   <img
-                    src={`https://ollanbackend.vercel.app${product.image}`}
+                    src={`${product.image}`}
                     alt={product.name}
                     className="h-40 object-contain max-w-full"
                     loading="lazy"
