@@ -393,7 +393,7 @@ const ProductManagement: React.FC = () => {
   return (
 <Box sx={{ p: 4, width: '100%', mx: 'auto', backgroundColor: 'white' }}>
   {/* your content here */}
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4 }}>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4, color: 'black' }}>
         Product Management
       </Typography>
 
