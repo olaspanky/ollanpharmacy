@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types/auth';
 
@@ -17,16 +17,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const token = localStorage.getItem('token');
     if (token) {
       try {
-        // Decode JWT manually without external library
         const base64Url = token.split('.')[1];
         const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map(function (c) {
+              return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            })
+            .join('')
+        );
         const decoded: User = JSON.parse(jsonPayload);
-        setUser(decoded);
+        if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+          console.log('Token expired');
+          localStorage.removeItem('token');
+          setUser(null);
+        } else {
+          console.log('Decoded JWT:', decoded);
+          setUser(decoded);
+        }
       } catch (error) {
+        console.error('JWT decode error:', error);
         localStorage.removeItem('token');
+        setUser(null);
       }
     }
   }, []);

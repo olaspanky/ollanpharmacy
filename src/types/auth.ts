@@ -1,9 +1,11 @@
+// ../types/auth.ts
 export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'customer' | 'admin';
-  _id?: string; // Optional for compatibility with JWT payload
+  role: string;
+  iat?: number; // Optional: issued-at timestamp
+  exp?: number; // Optional: expiration timestamp
 }
 
 export interface AuthResponse {

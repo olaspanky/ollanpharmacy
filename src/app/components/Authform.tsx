@@ -124,85 +124,50 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
     setIsLoading(true);
 
-    try {
-      if (type === "signup") {
-        const res = await fetch("https://ollanbackend.vercel.app/api/auth/signup", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: formData.name,
-            email: formData.email,
-            password: formData.password,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || "Signup failed");
-        }
-        console.log("Signup response:", data);
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-          setUser(data.user);
-          showNotification("success", "Account created successfully!");
-          setTimeout(() => router.push("/pages/shop"), 1000);
-        }
-      } else if (type === "signin") {
-        const res = await fetch("https://ollanbackend.vercel.app/api/auth/signin", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: formData.email,
-            password: formData.password,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || "Signin failed");
-        }
-        console.log("Signin response:", data);
-        if (data.token) {
-          localStorage.setItem("token", data.token);
-          setUser(data.user);
-          showNotification("success", "Welcome back!");
-          setTimeout(() => router.push("/pages/shop"), 1000);
-        }
-      } else if (type === "forgot-password") {
-        const res = await fetch("https://ollanbackend.vercel.app/api/auth/forgot-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: formData.email }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to send reset link");
-        }
-        console.log("Forgot password response:", data);
-        showNotification("success", "Password reset email sent! Check your inbox.");
-        setFormData({ email: "", password: "", confirmPassword: "", name: "" });
-      } else if (type === "reset-password") {
-        // Replaced searchParams.get("token") with URLSearchParams
-        const queryParams = new URLSearchParams(window.location.search);
-        const token = queryParams.get("token");
-        if (!token) {
-          throw new Error("Reset token is missing");
-        }
-        const res = await fetch("https://ollanbackend.vercel.app/api/auth/reset-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            token,
-            password: formData.password,
-          }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-          throw new Error(data.message || "Failed to reset password");
-        }
-        console.log("Reset password response:", data);
-        showNotification("success", "Password updated successfully!");
-        setTimeout(() => router.push("/pages/signin"), 2000);
-      }
-    } catch (error: any) {
+   try {
+  if (type === "signup") {
+    const res = await fetch("https://ollanbackend.vercel.app/api/auth/signup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Signup failed");
+    }
+    console.log("Signup response:", JSON.stringify(data, null, 2)); // Enhanced logging
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+      setUser(data.user);
+      showNotification("success", "Account created successfully!");
+      setTimeout(() => router.push("/pages/shop"), 1000);
+    }
+  } else if (type === "signin") {
+    const res = await fetch("https://ollanbackend.vercel.app/api/auth/signin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Signin failed");
+    }
+    console.log("Signin response:", JSON.stringify(data, null, 2)); // Enhanced logging
+    if (data.token) {
+      localStorage.setItem("token", data.token);
+      setUser(data.user);
+      showNotification("success", "Welcome back!");
+      setTimeout(() => router.push("/pages/shop"), 1000);
+    }
+  }
+}  catch (error: any) {
       console.error("Auth error:", {
         message: error.message,
       });
