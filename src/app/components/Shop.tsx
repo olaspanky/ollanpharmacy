@@ -224,7 +224,7 @@ const grandTotal = cartTotal + deliveryFee;
   const openQuantityModal = (product: Product) => {
     if (!user) {
       alert("Please sign in to add items to cart");
-      router.push("/signin");
+      router.push("/pages/signin");
       return;
     }
     setSelectedProduct(product);
