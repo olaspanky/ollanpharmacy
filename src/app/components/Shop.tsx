@@ -696,12 +696,15 @@ const PharmacyApp: React.FC = () => {
   };
 
   // Updated CheckoutModal to include only name, email, phone, delivery option, pickup location, prescription
- const CheckoutModal = () => {
+const CheckoutModal = () => {
   const { user } = useAuth();
   const modalRef = useRef<HTMLDivElement>(null);
   const [estimatedDelivery, setEstimatedDelivery] = useState<string>("");
   
   const isLoggedIn = !!user;
+  
+  // Memoize the isLoggedIn value to prevent unnecessary re-renders
+  const memoizedIsLoggedIn = useMemo(() => isLoggedIn, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -741,12 +744,12 @@ const PharmacyApp: React.FC = () => {
     };
   }, [isCheckoutOpen, customerInfo.deliveryOption]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     
     // For logged in users, only check phone, delivery option, and pickup location
     // For guests, check all fields including name and email
-    const requiredFieldsValid = isLoggedIn 
+    const requiredFieldsValid = memoizedIsLoggedIn 
       ? customerInfo.phone && customerInfo.deliveryOption && customerInfo.pickupLocation
       : customerInfo.name && customerInfo.email && customerInfo.phone && customerInfo.deliveryOption && customerInfo.pickupLocation;
 
@@ -754,17 +757,17 @@ const PharmacyApp: React.FC = () => {
       initializePayment();
     } else {
       const missingFields = [];
-      if (!isLoggedIn && !customerInfo.name) missingFields.push("name");
-      if (!isLoggedIn && !customerInfo.email) missingFields.push("email");
+      if (!memoizedIsLoggedIn && !customerInfo.name) missingFields.push("name");
+      if (!memoizedIsLoggedIn && !customerInfo.email) missingFields.push("email");
       if (!customerInfo.phone) missingFields.push("phone");
       if (!customerInfo.deliveryOption) missingFields.push("delivery option");
       if (!customerInfo.pickupLocation) missingFields.push("pickup location");
       
       alert(`Please fill in all required fields: ${missingFields.join(", ")}`);
     }
-  };
+  }, [memoizedIsLoggedIn, customerInfo]);
 
-  const handlePrescriptionUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePrescriptionUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       const validTypes = ["image/jpeg", "image/png", "application/pdf"];
@@ -778,7 +781,7 @@ const PharmacyApp: React.FC = () => {
       }
       setCustomerInfo({ ...customerInfo, prescription: file });
     }
-  };
+  }, [customerInfo]);
 
   if (!isCheckoutOpen) return null;
 
@@ -793,7 +796,7 @@ const PharmacyApp: React.FC = () => {
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Complete Your Order</h2>
               <p className="text-sm text-gray-600 mt-1">
-                {isLoggedIn 
+                {memoizedIsLoggedIn 
                   ? "Fill in your delivery details to proceed with payment" 
                   : "Fill in your details to proceed with payment"
                 }
@@ -815,7 +818,7 @@ const PharmacyApp: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-5">
               {/* Show name and email fields only for non-logged in users */}
-              {!isLoggedIn && (
+              {!memoizedIsLoggedIn && (
                 <>
                   <div className="bg-gray-50 p-4 rounded-xl">
                     <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
@@ -850,7 +853,7 @@ const PharmacyApp: React.FC = () => {
               )}
 
               {/* Show logged in user info if logged in */}
-              {isLoggedIn && (
+              {memoizedIsLoggedIn && (
                 <div className="bg-green-50 p-4 rounded-xl border border-green-200">
                   <div className="flex items-center mb-2">
                     <User size={18} className="mr-2 text-green-600" />
