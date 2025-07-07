@@ -1,35 +1,66 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import Navbar from '../../components/Navbar';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
+  Box,
   Button,
   TextField,
-  Checkbox,
   Typography,
-  Box,
   CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  IconButton,
-  Input,
-  Avatar,
-  Tooltip,
-  Grid,
   Card,
   CardContent,
+  CardActions,
+  Grid,
+  Chip,
+  Avatar,
+  Fab,
+  IconButton,
+  Collapse,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  Stack,
   Divider,
+  Paper,
+  useTheme,
+  useMediaQuery,
+  Checkbox,
+  FormControlLabel,
+  AppBar,
+  Toolbar,
+  Badge,
+  SpeedDial,
+  SpeedDialAction,
+  SpeedDialIcon,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Container,
 } from '@mui/material';
-import { Delete, Save, Cancel, Add, Edit, CloudUpload } from '@mui/icons-material';
+import {
+  Delete,
+  Save,
+  Add,
+  Edit,
+  CloudUpload,
+  ExpandMore,
+  FilterList,
+  Search,
+  Close,
+  CheckCircle,
+  Cancel,
+  Inventory,
+  AttachMoney,
+  Category,
+  Image,
+  SelectAll,
+  Clear,
+} from '@mui/icons-material';
 import axios from 'axios';
 import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -60,8 +91,12 @@ interface NewProduct {
   image: File | null;
 }
 
-// Component
 const ProductManagement: React.FC = () => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // State management
   const [products, setProducts] = useState<Product[]>([]);
   const [editedProducts, setEditedProducts] = useState<EditedProduct>({});
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
@@ -77,6 +112,12 @@ const ProductManagement: React.FC = () => {
     image: null,
   });
   const [isCreating, setIsCreating] = useState<boolean>(false);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [editingProduct, setEditingProduct] = useState<string | null>(null);
+  const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [selectionMode, setSelectionMode] = useState<boolean>(false);
 
   // Base URL for backend
   const API_URL = 'https://ollanbackend.vercel.app/api/products/';
@@ -86,47 +127,63 @@ const ProductManagement: React.FC = () => {
     fetchProducts();
   }, []);
 
-const fetchProducts = async () => {
-  setLoading(true);
-  try {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast.error('Please log in to access products');
+  const fetchProducts = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast.error('Please log in to access products');
+        setLoading(false);
+        return;
+      }
+      const response = await axios.get(API_URL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setProducts(response.data);
       setLoading(false);
-      return;
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to fetch products');
+      setLoading(false);
     }
-    console.log('Fetching from:', API_URL); // Debug log
-    const response = await axios.get(API_URL, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    console.log('Response:', response.data); // Debug log
-    setProducts(response.data);
-    setLoading(false);
-  } catch (error: any) {
-    console.error('Error fetching products:', error); // Debug log
-    toast.error(error.response?.data?.message || 'Failed to fetch products');
-    setLoading(false);
-  }
-};
+  };
 
-  // Utility function to validate and parse numeric values
+  // Utility functions
   const parseNumericValue = (value: string): number | null => {
-    if (value === '' || value === null || value === undefined) {
-      return null;
-    }
+    if (value === '' || value === null || value === undefined) return null;
     const parsed = parseFloat(value);
     return isNaN(parsed) ? null : parsed;
   };
 
-  // Handle input change for inline editing
+  const getCurrentValue = (productId: string, field: keyof Product, originalValue: any) => {
+    const editedValue = editedProducts[productId]?.[field];
+    return editedValue !== undefined ? editedValue : originalValue;
+  };
+
+  const hasNumericError = (productId: string, field: 'price' | 'stock', originalValue: number) => {
+    const editedValue = editedProducts[productId]?.[field];
+    if (editedValue === undefined) return false;
+    return isNaN(editedValue as number) || editedValue < 0;
+  };
+
+  // Filter products based on search and category
+  const filteredProducts = products.filter(product => {
+    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         product.category?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = filterCategory === 'all' || product.category === filterCategory;
+    return matchesSearch && matchesCategory;
+  });
+
+  // Get unique categories
+  const categories = Array.from(new Set(products.map(p => p.category).filter(Boolean)));
+
+  // Handle input changes
   const handleInputChange = (id: string, field: keyof Product, value: string) => {
     const product = products.find((p) => p._id === id);
     if (!product) return;
 
-    // Handle numeric fields with proper validation
     if (field === 'price' || field === 'stock') {
       if (value === '') {
-        // Allow empty input but don't add to editedProducts
         setEditedProducts((prev) => {
           const newEdits = { ...prev };
           if (newEdits[id]) {
@@ -141,52 +198,61 @@ const fetchProducts = async () => {
       }
       
       const numValue = parseNumericValue(value);
-      if (numValue === null || numValue < 0) {
-        return;
-      }
+      if (numValue === null || numValue < 0) return;
       
       setEditedProducts((prev) => ({
         ...prev,
-        [id]: {
-          ...prev[id],
-          [field]: numValue,
-        },
+        [id]: { ...prev[id], [field]: numValue },
       }));
     } else {
-      // Handle string fields
       setEditedProducts((prev) => ({
         ...prev,
-        [id]: {
-          ...prev[id],
-          [field]: value,
-        },
+        [id]: { ...prev[id], [field]: value },
       }));
     }
   };
 
-  // Handle file input for image (edit)
   const handleImageChange = (id: string, file: File | null) => {
     if (file) {
-      setSelectedImage((prev) => ({
-        ...prev,
-        [id]: file,
-      }));
+      setSelectedImage((prev) => ({ ...prev, [id]: file }));
     }
   };
 
-  // Handle new product input change
   const handleNewProductChange = (field: keyof NewProduct, value: string | File | null) => {
-    setNewProduct((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
+    setNewProduct((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Toggle product selection for batch operations
+  const toggleCardExpansion = (id: string) => {
+    setExpandedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
   const handleSelectProduct = (id: string) => {
     setSelectedProducts((prev) =>
       prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
     );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedProducts.length === filteredProducts.length) {
+      setSelectedProducts([]);
+    } else {
+      setSelectedProducts(filteredProducts.map(p => p._id));
+    }
+  };
+
+  const toggleSelectionMode = () => {
+    setSelectionMode(!selectionMode);
+    if (selectionMode) {
+      setSelectedProducts([]);
+    }
   };
 
   // Create new product
@@ -245,9 +311,9 @@ const fetchProducts = async () => {
     }
   };
 
-  // Save batch updates
-  const handleSave = async () => {
-    if (Object.keys(editedProducts).length === 0) {
+  // Save updates for a single product
+  const handleSaveProduct = async (productId: string) => {
+    if (!editedProducts[productId] && !selectedImage[productId]) {
       toast.warn('No changes to save');
       return;
     }
@@ -261,75 +327,60 @@ const fetchProducts = async () => {
         return;
       }
 
-      const updatePromises = Object.keys(editedProducts).map(async (id) => {
-        const productData = editedProducts[id];
-        const product = products.find((p) => p._id === id);
-        if (!product) throw new Error(`Product ${id} not found`);
+      const productData = editedProducts[productId];
+      const product = products.find((p) => p._id === productId);
+      if (!product) throw new Error(`Product not found`);
 
-        // Validate required fields with proper fallbacks
-        const name = productData.name !== undefined ? productData.name : product.name;
-        if (!name || name.trim() === '') {
-          throw new Error(`Name is required for product ${product.name}`);
-        }
+      const formData = new FormData();
+      let hasChanges = false;
 
-        const price = productData.price !== undefined ? productData.price : product.price;
-        if (price === undefined || price === null || isNaN(price) || price < 0) {
-          throw new Error(`Valid price is required for product ${product.name}`);
-        }
-
-        const stock = productData.stock !== undefined ? productData.stock : product.stock;
-        if (stock === undefined || stock === null || isNaN(stock) || stock < 0) {
-          throw new Error(`Valid stock is required for product ${product.name}`);
-        }
-
-        const formData = new FormData();
-        let hasChanges = false;
-
-        // Only append fields that have been edited
-        if (productData.name !== undefined && productData.name !== product.name) {
-          formData.append('name', name);
-          hasChanges = true;
-        }
-        if (productData.description !== undefined && productData.description !== product.description) {
-          formData.append('description', productData.description || '');
-          hasChanges = true;
-        }
-        if (productData.price !== undefined && productData.price !== product.price) {
-          formData.append('price', price.toString());
-          hasChanges = true;
-        }
-        if (productData.stock !== undefined && productData.stock !== product.stock) {
-          formData.append('stock', stock.toString());
-          hasChanges = true;
-        }
-        if (productData.category !== undefined && productData.category !== product.category) {
-          formData.append('category', productData.category || '');
-          hasChanges = true;
-        }
-        if (selectedImage[id]) {
-          formData.append('image', selectedImage[id]);
-          hasChanges = true;
-        }
-
-        if (!hasChanges) {
-          return Promise.resolve();
-        }
-
-        return axios.put(`${API_URL}/${id}`, formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
+      if (productData) {
+        Object.keys(productData).forEach(key => {
+          const field = key as keyof Product;
+          const value = productData[field];
+          if (value !== undefined && value !== product[field]) {
+            formData.append(key, value.toString());
+            hasChanges = true;
+          }
         });
+      }
+
+      if (selectedImage[productId]) {
+        formData.append('image', selectedImage[productId]);
+        hasChanges = true;
+      }
+
+      if (!hasChanges) {
+        setLoading(false);
+        return;
+      }
+
+      await axios.put(`${API_URL}/${productId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          Authorization: `Bearer ${token}`,
+        },
       });
 
-      await Promise.all(updatePromises);
-      toast.success('Products updated successfully');
-      setEditedProducts({});
-      setSelectedImage({});
+      toast.success('Product updated successfully');
+      
+      // Clear edits for this product
+      setEditedProducts(prev => {
+        const newEdits = { ...prev };
+        delete newEdits[productId];
+        return newEdits;
+      });
+      
+      setSelectedImage(prev => {
+        const newImages = { ...prev };
+        delete newImages[productId];
+        return newImages;
+      });
+      
+      setEditingProduct(null);
       fetchProducts();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || error.message || 'Failed to update products');
+      toast.error(error.response?.data?.message || 'Failed to update product');
       setLoading(false);
     }
   };
@@ -353,6 +404,7 @@ const fetchProducts = async () => {
       await Promise.all(deletePromises);
       toast.success('Selected products deleted');
       setSelectedProducts([]);
+      setSelectionMode(false);
       fetchProducts();
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to delete products');
@@ -360,7 +412,6 @@ const fetchProducts = async () => {
     }
   };
 
-  // Open delete confirmation dialog
   const handleOpenDialog = () => {
     if (selectedProducts.length > 0) {
       setOpenDialog(true);
@@ -369,317 +420,460 @@ const fetchProducts = async () => {
     }
   };
 
-  // Close dialog
   const handleCloseDialog = () => {
     setOpenDialog(false);
   };
 
-  // Confirm delete
   const handleConfirmDelete = () => {
     handleDelete();
     setOpenDialog(false);
   };
 
-  // Helper function to get current value for display
-  const getCurrentValue = (productId: string, field: keyof Product, originalValue: any) => {
-    const editedValue = editedProducts[productId]?.[field];
-    return editedValue !== undefined ? editedValue : originalValue;
-  };
+  // Mobile Product Card Component
+  const ProductCard = ({ product }: { product: Product }) => {
+    const isExpanded = expandedCards.has(product._id);
+    const isEditing = editingProduct === product._id;
+    const hasChanges = editedProducts[product._id] || selectedImage[product._id];
 
-  // Helper function to check if a numeric field has validation errors
-  const hasNumericError = (productId: string, field: 'price' | 'stock', originalValue: number) => {
-    const editedValue = editedProducts[productId]?.[field];
-    if (editedValue === undefined) return false;
-    return isNaN(editedValue as number) || editedValue < 0;
+    return (
+      <Card 
+        key={product._id} 
+        sx={{ 
+          mb: 2, 
+          boxShadow: hasChanges ? 3 : 1,
+          border: hasChanges ? 2 : 1,
+          borderColor: hasChanges ? 'primary.main' : 'divider',
+          transition: 'all 0.3s ease',
+        }}
+      >
+        <CardContent sx={{ pb: 1 }}>
+          {/* Product Header */}
+          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            {selectionMode && (
+              <Checkbox
+                checked={selectedProducts.includes(product._id)}
+                onChange={() => handleSelectProduct(product._id)}
+                sx={{ mr: 1 }}
+              />
+            )}
+            <Avatar
+              src={product.image || undefined}
+              alt={product.name}
+              sx={{ width: 48, height: 48, mr: 2 }}
+              variant="rounded"
+            >
+              {product.name.charAt(0)}
+            </Avatar>
+            <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Typography variant="h6" sx={{ fontWeight: 'bold', fontSize: '1.1rem' }} noWrap>
+                {product.name}
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.5 }}>
+                <Chip
+                  label={`$${product.price}`}
+                  size="small"
+                  color="primary"
+                  icon={<AttachMoney />}
+                />
+                <Chip
+                  label={`Stock: ${product.stock}`}
+                  size="small"
+                  color={product.stock > 0 ? 'success' : 'error'}
+                  icon={<Inventory />}
+                />
+              </Box>
+            </Box>
+            <IconButton
+              onClick={() => toggleCardExpansion(product._id)}
+              sx={{ ml: 1 }}
+            >
+              <ExpandMore
+                sx={{
+                  transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                  transition: 'transform 0.3s ease',
+                }}
+              />
+            </IconButton>
+          </Box>
+
+          {/* Quick Info */}
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+            {product.category && (
+              <Chip
+                label={product.category}
+                size="small"
+                variant="outlined"
+                icon={<Category />}
+              />
+            )}
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <IconButton
+                size="small"
+                onClick={() => setEditingProduct(isEditing ? null : product._id)}
+                color={isEditing ? 'primary' : 'default'}
+              >
+                <Edit />
+              </IconButton>
+              {hasChanges && (
+                <IconButton
+                  size="small"
+                  onClick={() => handleSaveProduct(product._id)}
+                  color="success"
+                  disabled={loading}
+                >
+                  <CheckCircle />
+                </IconButton>
+              )}
+            </Box>
+          </Box>
+
+          {/* Expanded Content */}
+          <Collapse in={isExpanded} timeout="auto" unmountOnExit>
+            <Divider sx={{ mb: 2 }} />
+            
+            {/* Edit Mode */}
+            {isEditing ? (
+              <Stack spacing={2}>
+                <TextField
+                  fullWidth
+                  label="Name"
+                  value={getCurrentValue(product._id, 'name', product.name)}
+                  onChange={(e) => handleInputChange(product._id, 'name', e.target.value)}
+                  size="small"
+                  error={editedProducts[product._id]?.name === ''}
+                  helperText={editedProducts[product._id]?.name === '' ? 'Name is required' : ''}
+                />
+                
+                <TextField
+                  fullWidth
+                  label="Description"
+                  value={getCurrentValue(product._id, 'description', product.description || '')}
+                  onChange={(e) => handleInputChange(product._id, 'description', e.target.value)}
+                  size="small"
+                  multiline
+                  rows={2}
+                />
+                
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField
+                    label="Price ($)"
+                    type="number"
+                    value={getCurrentValue(product._id, 'price', product.price)}
+                    onChange={(e) => handleInputChange(product._id, 'price', e.target.value)}
+                    size="small"
+                    error={hasNumericError(product._id, 'price', product.price)}
+                    helperText={hasNumericError(product._id, 'price', product.price) ? 'Price must be ≥ 0' : ''}
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
+                    label="Stock"
+                    type="number"
+                    value={getCurrentValue(product._id, 'stock', product.stock)}
+                    onChange={(e) => handleInputChange(product._id, 'stock', e.target.value)}
+                    size="small"
+                    error={hasNumericError(product._id, 'stock', product.stock)}
+                    helperText={hasNumericError(product._id, 'stock', product.stock) ? 'Stock must be ≥ 0' : ''}
+                    sx={{ flex: 1 }}
+                  />
+                </Box>
+                
+                <TextField
+                  fullWidth
+                  label="Category"
+                  value={getCurrentValue(product._id, 'category', product.category || '')}
+                  onChange={(e) => handleInputChange(product._id, 'category', e.target.value)}
+                  size="small"
+                />
+                
+                <Box>
+                  <input
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    id={`image-upload-${product._id}`}
+                    type="file"
+                    onChange={(e) => handleImageChange(product._id, e.target.files?.[0] || null)}
+                  />
+                  <label htmlFor={`image-upload-${product._id}`}>
+                    <Button
+                      variant="outlined"
+                      component="span"
+                      startIcon={<CloudUpload />}
+                      size="small"
+                      fullWidth
+                    >
+                      Change Image
+                    </Button>
+                  </label>
+                  {selectedImage[product._id] && (
+                    <Typography variant="caption" color="success.main" sx={{ mt: 1, display: 'block' }}>
+                      New image selected: {selectedImage[product._id].name}
+                    </Typography>
+                  )}
+                </Box>
+              </Stack>
+            ) : (
+              /* View Mode */
+              <Box>
+                {product.description && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {product.description}
+                  </Typography>
+                )}
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                  <Chip label={`ID: ${product._id.slice(-6)}`} size="small" variant="outlined" />
+                  {product.createdBy && (
+                    <Chip label={`By: ${product.createdBy.name}`} size="small" variant="outlined" />
+                  )}
+                </Box>
+              </Box>
+            )}
+          </Collapse>
+        </CardContent>
+      </Card>
+    );
   };
 
   return (
-<Box sx={{ p: 4, width: '100%', mx: 'auto', backgroundColor: 'white' }}>
-  {/* your content here */}
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: 'bold', mb: 4, color: 'black' }}>
-        Product Management
-      </Typography>
+    <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default' }}>
+      {/* Mobile Header */}
+      <AppBar position="sticky" sx={{ mb: 2 }}>
+        <Toolbar>
+          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: 'bold' }}>
+            Product Management
+          </Typography>
+          {selectionMode && (
+            <Badge badgeContent={selectedProducts.length} color="secondary">
+              <IconButton color="inherit" onClick={toggleSelectionMode}>
+                <Close />
+              </IconButton>
+            </Badge>
+          )}
+        </Toolbar>
+      </AppBar>
 
-      {/* Action Buttons */}
-      <Box sx={{ mb: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<Save />}
-            onClick={handleSave}
-            disabled={Object.keys(editedProducts).length === 0 || loading}
-            sx={{ minWidth: '150px' }}
-          >
-            {loading ? <CircularProgress size={24} /> : 'Save Changes'}
-          </Button>
-          <Button
-            variant="contained"
-            color="error"
-            startIcon={<Delete />}
-            onClick={handleOpenDialog}
-            disabled={selectedProducts.length === 0 || loading}
-            sx={{ minWidth: '150px' }}
-          >
-            Delete Selected
-          </Button>
-        </Box>
-        <Button
-          variant="contained"
-          color="success"
-          startIcon={isCreating ? <Cancel /> : <Add />}
-          onClick={() => setIsCreating(!isCreating)}
-          sx={{ minWidth: '150px' }}
-        >
-          {isCreating ? 'Cancel' : 'Add Product'}
-        </Button>
-      </Box>
+      <Container maxWidth="lg" sx={{ pb: 10 }}>
+        {/* Search and Filters */}
+        <Paper sx={{ p: 2, mb: 2 }}>
+          <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+            <TextField
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              size="small"
+              sx={{ flex: 1 }}
+              InputProps={{
+                startAdornment: <Search sx={{ mr: 1, color: 'text.secondary' }} />,
+              }}
+            />
+            <IconButton onClick={() => setShowFilters(!showFilters)}>
+              <FilterList />
+            </IconButton>
+          </Box>
 
-      {/* Create Product Form */}
+          <Collapse in={showFilters}>
+            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+              <FormControl size="small" sx={{ minWidth: 120 }}>
+                <InputLabel>Category</InputLabel>
+                <Select
+                  value={filterCategory}
+                  label="Category"
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                >
+                  <MenuItem value="all">All Categories</MenuItem>
+                  {categories.map(category => (
+                    <MenuItem key={category} value={category}>{category}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+              
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setSearchTerm('');
+                  setFilterCategory('all');
+                }}
+                startIcon={<Clear />}
+                size="small"
+              >
+                Clear
+              </Button>
+            </Box>
+          </Collapse>
+        </Paper>
+
+        {/* Selection Mode Header */}
+        {selectionMode && (
+          <Paper sx={{ p: 2, mb: 2, backgroundColor: 'primary.50' }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 'bold' }}>
+                {selectedProducts.length} selected
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  onClick={handleSelectAll}
+                  startIcon={<SelectAll />}
+                  size="small"
+                >
+                  {selectedProducts.length === filteredProducts.length ? 'Deselect All' : 'Select All'}
+                </Button>
+                <Button
+                  variant="contained"
+                  color="error"
+                  onClick={handleOpenDialog}
+                  startIcon={<Delete />}
+                  size="small"
+                  disabled={selectedProducts.length === 0}
+                >
+                  Delete
+                </Button>
+              </Box>
+            </Box>
+          </Paper>
+        )}
+
+        {/* Create Product Form */}
         {isCreating && (
-            <Card sx={{ mb: 4, boxShadow: 3 }}>
+          <Card sx={{ mb: 2 }}>
             <CardContent>
-                <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 'bold' }}>
                 Create New Product
-                </Typography>
-                <Grid container spacing={2}>
-                <Grid>
-                    <TextField
-                    fullWidth
-                    label="Name"
-                    value={newProduct.name}
-                    onChange={(e) => handleNewProductChange('name', e.target.value)}
-                    required
-                    />
-                </Grid>
-                <Grid >
-                    <TextField
-                    fullWidth
-                    label="Description"
-                    value={newProduct.description}
-                    onChange={(e) => handleNewProductChange('description', e.target.value)}
-                    />
-                </Grid>
-                <Grid>
-                    <TextField
-                    fullWidth
+              </Typography>
+              <Stack spacing={2}>
+                <TextField
+                  fullWidth
+                  label="Name"
+                  value={newProduct.name}
+                  onChange={(e) => handleNewProductChange('name', e.target.value)}
+                  required
+                  size="small"
+                />
+                <TextField
+                  fullWidth
+                  label="Description"
+                  value={newProduct.description}
+                  onChange={(e) => handleNewProductChange('description', e.target.value)}
+                  multiline
+                  rows={2}
+                  size="small"
+                />
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                  <TextField
                     label="Price ($)"
                     type="number"
                     value={newProduct.price}
                     onChange={(e) => handleNewProductChange('price', e.target.value)}
                     required
-                    />
-                </Grid>
-                <Grid >
-                    <TextField
-                    fullWidth
+                    size="small"
+                    sx={{ flex: 1 }}
+                  />
+                  <TextField
                     label="Stock"
                     type="number"
                     value={newProduct.stock}
                     onChange={(e) => handleNewProductChange('stock', e.target.value)}
                     required
-                    />
-                </Grid>
-                <Grid>
-                    <TextField
-                    fullWidth
-                    label="Category"
-                    value={newProduct.category}
-                    onChange={(e) => handleNewProductChange('category', e.target.value)}
-                    />
-                </Grid>
-                <Grid>
-                    <Input
-                    type="file"
-                    inputProps={{ accept: "image/*" }}
-                    onChange={(e) =>
-                        handleNewProductChange('image', (e.target as HTMLInputElement).files?.[0] || null)
-                    }
-                />
-                </Grid>
-                </Grid>
-                <Box sx={{ mt: 2, textAlign: 'right' }}>
-                <Button variant="contained" color="primary" onClick={handleCreateProduct}>
-                    Create Product
-                </Button>
+                    size="small"
+                    sx={{ flex: 1 }}
+                  />
                 </Box>
+                <TextField
+                  fullWidth
+                  label="Category"
+                  value={newProduct.category}
+                  onChange={(e) => handleNewProductChange('category', e.target.value)}
+                  size="small"
+                />
+                <Box>
+                  <input
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    id="new-product-image"
+                    type="file"
+                    onChange={(e) => handleNewProductChange('image', e.target.files?.[0] || null)}
+                  />
+                  <label htmlFor="new-product-image">
+                    <Button
+                      variant="outlined"
+                      component="span"
+                      startIcon={<CloudUpload />}
+                      fullWidth
+                    >
+                      Upload Image
+                    </Button>
+                  </label>
+                  {newProduct.image && (
+                    <Typography variant="caption" color="success.main" sx={{ mt: 1, display: 'block' }}>
+                      Selected: {newProduct.image.name}
+                    </Typography>
+                  )}
+                </Box>
+              </Stack>
             </CardContent>
-            </Card>
+            <CardActions>
+              <Button
+                variant="contained"
+                onClick={handleCreateProduct}
+                disabled={loading}
+                startIcon={loading ? <CircularProgress size={20} /> : <Save />}
+                fullWidth
+              >
+                Create Product
+              </Button>
+            </CardActions>
+          </Card>
         )}
-    
-        {/* Loading Spinner */}
 
-      {loading && products.length === 0 ? (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <CircularProgress size={60} />
-        </Box>
-      ) : (
-        /* Product Table */
-        <Card sx={{ boxShadow: 3 }}>
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: 'primary.main' }}>
-                  <TableCell padding="checkbox">
-                    <Checkbox
-                      onChange={(e) =>
-                        setSelectedProducts(
-                          e.target.checked ? products.map((p) => p._id) : []
-                        )
-                      }
-                      checked={selectedProducts.length === products.length && products.length > 0}
-                      sx={{ color: 'common.white' }}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ color: 'common.white' }}>Image</TableCell>
-                  <TableCell sx={{ color: 'common.white' }}>Name</TableCell>
-                  <TableCell sx={{ color: 'common.white' }}>Description</TableCell>
-                  <TableCell sx={{ color: 'common.white' }}>Price ($)</TableCell>
-                  <TableCell sx={{ color: 'common.white' }}>Stock</TableCell>
-                  <TableCell sx={{ color: 'common.white' }}>Category</TableCell>
-                  <TableCell sx={{ color: 'common.white' }}>Actions</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {products.map((product) => (
-                  <TableRow key={product._id} hover>
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={selectedProducts.includes(product._id)}
-                        onChange={() => handleSelectProduct(product._id)}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      {product.image ? (
-                        <Avatar
-                          src={product.image}
-                          alt={product.name}
-                          sx={{ width: 56, height: 56 }}
-                          variant="rounded"
-                        />
-                      ) : (
-                        <Avatar sx={{ width: 56, height: 56 }} variant="rounded">
-                          {product.name.charAt(0)}
-                        </Avatar>
-                      )}
-                      <Input
-                        type="file"
-                        onChange={(e) =>
-                          handleImageChange(product._id, (e.target as HTMLInputElement).files?.[0] || null)
-                        }
-                        sx={{ display: 'none' }}
-                        id={`image-upload-${product._id}`}
-                      />
-                      <label htmlFor={`image-upload-${product._id}`}>
-                        <Button
-                          component="span"
-                          size="small"
-                          startIcon={<Edit />}
-                          sx={{ mt: 1 }}
-                        >
-                          Change
-                        </Button>
-                      </label>
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        fullWidth
-                        value={getCurrentValue(product._id, 'name', product.name)}
-                        onChange={(e) => handleInputChange(product._id, 'name', e.target.value)}
-                        size="small"
-                        error={editedProducts[product._id]?.name === ''}
-                        helperText={
-                          editedProducts[product._id]?.name === '' ? 'Name is required' : ''
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        fullWidth
-                        value={getCurrentValue(product._id, 'description', product.description || '')}
-                        onChange={(e) =>
-                          handleInputChange(product._id, 'description', e.target.value)
-                        }
-                        size="small"
-                        multiline
-                        rows={2}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        fullWidth
-                        type="number"
-                        value={getCurrentValue(product._id, 'price', product.price)}
-                        onChange={(e) => handleInputChange(product._id, 'price', e.target.value)}
-                        size="small"
-                        error={hasNumericError(product._id, 'price', product.price)}
-                        helperText={
-                          hasNumericError(product._id, 'price', product.price)
-                            ? 'Price must be ≥ 0'
-                            : ''
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        fullWidth
-                        type="number"
-                        value={getCurrentValue(product._id, 'stock', product.stock)}
-                        onChange={(e) => handleInputChange(product._id, 'stock', e.target.value)}
-                        size="small"
-                        error={hasNumericError(product._id, 'stock', product.stock)}
-                        helperText={
-                          hasNumericError(product._id, 'stock', product.stock)
-                            ? 'Stock must be ≥ 0'
-                            : ''
-                        }
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <TextField
-                        fullWidth
-                        value={getCurrentValue(product._id, 'category', product.category || '')}
-                        onChange={(e) =>
-                          handleInputChange(product._id, 'category', e.target.value)
-                        }
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Tooltip title="Discard changes">
-                        <IconButton
-                          onClick={() => {
-                            setEditedProducts((prev) => {
-                              const newEdits = { ...prev };
-                              delete newEdits[product._id];
-                              return newEdits;
-                            });
-                            setSelectedImage((prev) => {
-                              const newImages = { ...prev };
-                              delete newImages[product._id];
-                              return newImages;
-                            });
-                          }}
-                          disabled={!editedProducts[product._id] && !selectedImage[product._id]}
-                        >
-                          <Cancel color={editedProducts[product._id] || selectedImage[product._id] ? "error" : "disabled"} />
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Card>
-      )}
+        {/* Products List */}
+        {loading && products.length === 0 ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress size={60} />
+          </Box>
+        ) : (
+          <Box>
+            <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 'bold' }}>
+              {filteredProducts.length} Product{filteredProducts.length !== 1 ? 's' : ''}
+            </Typography>
+            {filteredProducts.map(product => (
+              <ProductCard key={product._id} product={product} />
+            ))}
+          </Box>
+        )}
+
+        {/* Empty State */}
+        {filteredProducts.length === 0 && !loading && (
+          <Box sx={{ textAlign: 'center', py: 4 }}>
+            <Typography variant="h6" color="text.secondary">
+              No products found
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Try adjusting your search or filters
+            </Typography>
+          </Box>
+        )}
+      </Container>
+
+      {/* Floating Action Button */}
+      <SpeedDial
+        ariaLabel="Product actions"
+        sx={{ position: 'fixed', bottom: 16, right: 16 }}
+        icon={<SpeedDialIcon />}
+      >
+        
+        <SpeedDialAction
+          icon={<SelectAll />}
+          tooltipTitle="Select Mode"
+          onClick={toggleSelectionMode}
+        />
+      </SpeedDial>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={openDialog} onClose={handleCloseDialog}>
+      <Dialog open={openDialog} onClose={handleCloseDialog} maxWidth="sm" fullWidth>
         <DialogTitle>Confirm Deletion</DialogTitle>
         <DialogContent>
           <Typography>
-            Are you sure you want to delete {selectedProducts.length} selected product(s)? This action cannot be undone.
+            Are you sure you want to delete {selectedProducts.length} selected product(s)? 
+            This action cannot be undone.
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -692,7 +886,7 @@ const fetchProducts = async () => {
         </DialogActions>
       </Dialog>
 
-      <ToastContainer position="top-right" autoClose={5000} />
+      <ToastContainer position="top-center" autoClose={3000} />
     </Box>
   );
 };
