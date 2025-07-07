@@ -1,12 +1,12 @@
-"use client"; // Added "use client" directive for Next.js client component
+"use client";
 
-import React, { useState, useRef, useEffect, useReducer, useMemo, useCallback } from "react";
-import { ShoppingCart, Plus, Minus, X, CreditCard, Phone, User, Search, Upload, UploadCloud, Home, Mail } from "lucide-react";
+import React, { useState, useRef, useEffect, useReducer, useCallback } from "react";
+import { ShoppingCart, Plus, Minus, X, CreditCard, Phone, User, Search, Upload, UploadCloud, Home } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import logo from "../../../public/ollogo.svg";
 import { useAuth } from "../../context/AuthContext";
-import { Product, Cart, CartItem } from "../../types";
+import { Product, CartItem } from "../../types";
 import { useRouter } from "next/navigation";
 import api from "@/src/lib/api";
 
@@ -76,7 +76,6 @@ const cartReducer = (state: CartItem[], action: CartAction): CartItem[] => {
   }
 };
 
-// Updated CustomerInfo interface to remove city, state, and address
 interface CustomerInfo {
   name: string;
   email: string;
@@ -96,7 +95,6 @@ const PharmacyApp: React.FC = () => {
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
-  // Updated customerInfo initialization with user data
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: user?.name || "",
     email: user?.email || "",
@@ -107,11 +105,74 @@ const PharmacyApp: React.FC = () => {
   });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [orderComplete, setOrderComplete] = useState<boolean>(false);
+  const [estimatedDelivery, setEstimatedDelivery] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>(["All Category"]);
   const [isPaystackLoaded, setIsPaystackLoaded] = useState<boolean>(false);
+  const activeInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Sync customerInfo with user
+  useEffect(() => {
+    setCustomerInfo((prev) => ({
+      ...prev,
+      name: user?.name || "",
+      email: user?.email || "",
+    }));
+  }, [user]);
+
+  // Load Paystack script
+  useEffect(() => {
+    const paystackScript = document.createElement("script");
+    paystackScript.src = "https://js.paystack.co/v1/inline.js";
+    paystackScript.async = true;
+    paystackScript.onload = () => {
+      console.log("Paystack script loaded successfully");
+      setIsPaystackLoaded(true);
+    };
+    paystackScript.onerror = () => {
+      console.error("Failed to load Paystack script");
+      setIsPaystackLoaded(false);
+    };
+    document.head.appendChild(paystackScript);
+
+    return () => {
+      document.head.removeChild(paystackScript);
+    };
+  }, []);
+
+  // Fetch products and cart
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const { data } = await api.get("/api/products");
+        setProducts(data);
+        const uniqueCategories = [
+          "All Category",
+          ...new Set(data.map((product: Product) => product.category).filter(Boolean)),
+        ] as string[];
+        setCategories(uniqueCategories);
+      } catch (error: any) {
+        console.error("Error fetching products:", error.message || "Unknown error");
+      }
+    };
+
+    const fetchCart = async () => {
+      if (user) {
+        try {
+          const { data } = await api.get("/api/cart");
+          cartDispatch({ type: "SET_CART", payload: data.items || [] });
+        } catch (error: any) {
+          console.error("Error fetching cart:", error.message || "Unknown error");
+        }
+      }
+    };
+
+    fetchProducts();
+    fetchCart();
+  }, [user]);
+
+  // Calculate delivery time
   const calculateDeliveryTime = (orderTime: Date): string => {
     const bufferedTime = new Date(orderTime.getTime() + 30 * 60 * 1000);
     const hours = bufferedTime.getHours();
@@ -148,67 +209,7 @@ const PharmacyApp: React.FC = () => {
     });
   };
 
-  // Load Paystack script (unchanged)
-  useEffect(() => {
-    const paystackScript = document.createElement("script");
-    paystackScript.src = "https://js.paystack.co/v1/inline.js";
-    paystackScript.async = true;
-    paystackScript.onload = () => {
-      console.log("Paystack script loaded successfully");
-      setIsPaystackLoaded(true);
-    };
-    paystackScript.onerror = () => {
-      console.error("Failed to load Paystack script");
-      setIsPaystackLoaded(false);
-    };
-    document.head.appendChild(paystackScript);
-
-    return () => {
-      document.head.removeChild(paystackScript);
-    };
-  }, []);
-
-  // Fetch products and cart (unchanged)
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const { data } = await api.get("/api/products");
-        setProducts(data);
-        const uniqueCategories = [
-          "All Category",
-          ...new Set(data.map((product: Product) => product.category).filter(Boolean)),
-        ] as string[];
-        setCategories(uniqueCategories);
-      } catch (error: any) {
-        console.error("Error fetching products:", error.message || "Unknown error");
-      }
-    };
-
-    const fetchCart = async () => {
-      if (user) {
-        try {
-          const { data } = await api.get("/api/cart");
-          cartDispatch({ type: "SET_CART", payload: data.items || [] });
-        } catch (error: any) {
-          console.error("Error fetching cart:", error.message || "Unknown error");
-        }
-      }
-    };
-
-    fetchProducts();
-    fetchCart();
-  }, [user]);
-
-  // Update customerInfo when user changes
-  useEffect(() => {
-    setCustomerInfo((prev) => ({
-      ...prev,
-      name: user?.name || "",
-      email: user?.email || "",
-    }));
-  }, [user]);
-
-  // Filter products (unchanged)
+  // Filter products
   const filteredProducts =
     selectedCategory === "All Category"
       ? products
@@ -230,18 +231,18 @@ const PharmacyApp: React.FC = () => {
   );
   const allProducts = searchedProducts;
 
-  // Calculate cart totals (unchanged)
+  // Calculate cart totals
   const cartTotal = cart.reduce((total, item) => total + item.productId.price * item.quantity, 0);
   const deliveryFee = cartTotal > 0
     ? customerInfo.deliveryOption === "express"
       ? 1500
       : customerInfo.deliveryOption === "timeframe" && cartTotal < 5000
-    ? 500
-    : 0
-: 0;
+        ? 500
+        : 0
+    : 0;
   const grandTotal = cartTotal + deliveryFee;
 
-  // Handle add to cart (unchanged)
+  // Handle add to cart
   const openQuantityModal = (product: Product) => {
     if (!user) {
       alert("Please sign in to add items to cart");
@@ -273,7 +274,7 @@ const PharmacyApp: React.FC = () => {
     }
   };
 
-  // Updated Paystack integration to remove city, state, address from payload and metadata
+  // Paystack integration
   const initializePayment = async () => {
     if (!user) {
       alert("Please sign in to proceed with checkout");
@@ -317,7 +318,7 @@ const PharmacyApp: React.FC = () => {
 
     // Calculate delivery time
     const orderTime = new Date();
-    const estimatedDelivery =
+    const estimatedDeliveryTime =
       customerInfo.deliveryOption === "express"
         ? new Date(orderTime.getTime() + 60 * 60 * 1000).toLocaleString("en-US", {
             hour: "numeric",
@@ -331,15 +332,13 @@ const PharmacyApp: React.FC = () => {
           ? calculateDeliveryTime(orderTime)
           : "";
 
-    // Updated payload to include only essential fields
+    setEstimatedDelivery(estimatedDeliveryTime);
+
+    // Prepare payload
     const payload = {
       customerInfo: {
-        name: customerInfo.name,
-        email: customerInfo.email,
-        phone: customerInfo.phone,
-        deliveryOption: customerInfo.deliveryOption,
-        pickupLocation: customerInfo.pickupLocation,
-        estimatedDelivery,
+        ...customerInfo,
+        estimatedDelivery: estimatedDeliveryTime,
       },
       deliveryFee,
       prescriptionUrl,
@@ -347,6 +346,7 @@ const PharmacyApp: React.FC = () => {
 
     console.log("Order creation payload:", JSON.stringify(payload, null, 2));
 
+    // Create order in backend
     try {
       const { data } = await api.post("/api/orders/create", payload);
       const orderId = data.order._id;
@@ -408,11 +408,6 @@ const PharmacyApp: React.FC = () => {
               value: customerInfo.phone,
             },
             {
-              display_name: "Prescription Uploaded",
-              variable_name: "prescription_uploaded",
-              value: prescriptionUrl ? "Yes" : "No",
-            },
-            {
               display_name: "Delivery Option",
               variable_name: "delivery_option",
               value: customerInfo.deliveryOption,
@@ -425,12 +420,17 @@ const PharmacyApp: React.FC = () => {
             {
               display_name: "Estimated Delivery",
               variable_name: "estimated_delivery",
-              value: estimatedDelivery,
+              value: estimatedDeliveryTime,
             },
             {
               display_name: "Delivery Fee",
               variable_name: "delivery_fee",
               value: `₦${deliveryFee.toLocaleString()}`,
+            },
+            {
+              display_name: "Prescription Uploaded",
+              variable_name: "prescription_uploaded",
+              value: prescriptionUrl ? "Yes" : "No",
             },
           ],
         },
@@ -444,15 +444,8 @@ const PharmacyApp: React.FC = () => {
 
       console.log("Paystack config:", JSON.stringify(paystackConfig, null, 2));
 
-      try {
-        const handler = window.PaystackPop.setup(paystackConfig);
-        handler.openIframe();
-      } catch (error: any) {
-        console.error("Paystack setup error:", error);
-        alert("Error initializing payment: " + (error.message || "Paystack setup failed"));
-        setIsProcessing(false);
-        setIsCheckoutOpen(false);
-      }
+      const handler = window.PaystackPop.setup(paystackConfig);
+      handler.openIframe();
     } catch (error: any) {
       console.error("Create order error:", error);
       alert("Error creating order: " + (error.message || "Unknown error"));
@@ -461,7 +454,41 @@ const PharmacyApp: React.FC = () => {
     }
   };
 
-  // QuantityModal, CartModal, OrderCompleteModal (unchanged)
+  // Debounce for input handling
+  const debounce = (func: (...args: any[]) => void, wait: number) => {
+    let timeout: NodeJS.Timeout;
+    return (...args: any[]) => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => func(...args), wait);
+    };
+  };
+
+  const handleInputChange = useCallback(
+    debounce((key: keyof CustomerInfo, value: string) => {
+      setCustomerInfo((prev) => ({ ...prev, [key]: value }));
+    }, 300),
+    []
+  );
+
+  const handleSearchInputChange = useCallback(
+    debounce((value: string) => {
+      setSearchQuery(value);
+    }, 300),
+    []
+  );
+
+  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    activeInputRef.current = e.target;
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (activeInputRef.current === e.target) {
+      setTimeout(() => {
+        e.target.focus();
+      }, 0);
+    }
+  };
+
   const QuantityModal = () => {
     const modalRef = useRef<HTMLDivElement>(null);
 
@@ -506,7 +533,7 @@ const PharmacyApp: React.FC = () => {
           </div>
           <div className="flex items-center space-x-4 mb-4">
             <img
-              src={`${selectedProduct.image}`}
+              src={`https://ollanbackend.vercel.app${selectedProduct.image}`}
               alt={selectedProduct.name}
               className="w-16 h-16 object-contain bg-gray-50 rounded"
             />
@@ -611,7 +638,7 @@ const PharmacyApp: React.FC = () => {
                     {cart.map((item) => (
                       <div key={item.productId._id} className="flex items-center space-x-4 p-4 border rounded-lg">
                         <img
-                          src={`https://ollanbackend.vercel.app/${item.productId.image}`}
+                          src={`https://ollanbackend.vercel.app${item.productId.image}`}
                           alt={item.productId.name}
                           className="w-16 h-16 object-contain bg-gray-50 rounded"
                         />
@@ -695,346 +722,312 @@ const PharmacyApp: React.FC = () => {
     );
   };
 
-  // Updated CheckoutModal to include only name, email, phone, delivery option, pickup location, prescription
- const CheckoutModal = () => {
-  const { user } = useAuth();
-  const modalRef = useRef<HTMLDivElement>(null);
-  const [estimatedDelivery, setEstimatedDelivery] = useState<string>("");
-  
-  const isLoggedIn = !!user;
-  
-  // Memoize the isLoggedIn value to prevent unnecessary re-renders
-  const memoizedIsLoggedIn = useMemo(() => isLoggedIn, [user]);
+  const CheckoutModal = () => {
+    const modalRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
-        console.log("Clicked outside modal, closing...");
-        setIsCheckoutOpen(false);
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          modalRef.current &&
+          !modalRef.current.contains(event.target as Node) &&
+          !(event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
+        ) {
+          console.log("Clicked outside modal, closing...");
+          setIsCheckoutOpen(false);
+        }
+      };
+
+      if (isCheckoutOpen) {
+        console.log("Modal opened, adding click outside listener");
+        document.addEventListener("mousedown", handleClickOutside);
+        document.body.style.overflow = "hidden";
+
+        if (customerInfo.deliveryOption === "timeframe") {
+          setEstimatedDelivery(calculateDeliveryTime(new Date()));
+        } else if (customerInfo.deliveryOption === "express") {
+          const orderTime = new Date();
+          orderTime.setHours(orderTime.getHours() + 1);
+          setEstimatedDelivery(
+            orderTime.toLocaleString("en-US", {
+              hour: "numeric",
+              minute: "2-digit",
+              hour12: true,
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            })
+          );
+        }
+      }
+
+      return () => {
+        console.log("Cleaning up modal event listener");
+        document.removeEventListener("mousedown", handleClickOutside);
+        document.body.style.overflow = "unset";
+      };
+    }, [isCheckoutOpen, customerInfo.deliveryOption]);
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      if (
+        customerInfo.name &&
+        customerInfo.email &&
+        customerInfo.phone &&
+        customerInfo.deliveryOption &&
+        customerInfo.pickupLocation
+      ) {
+        initializePayment();
+      } else {
+        alert("Please fill in all required fields, including delivery option and pickup location");
       }
     };
 
-    if (isCheckoutOpen) {
-      console.log("Modal opened, adding click outside listener");
-      document.addEventListener("mousedown", handleClickOutside, { capture: true });
-      document.body.style.overflow = "hidden";
-
-      if (customerInfo.deliveryOption === "timeframe") {
-        setEstimatedDelivery(calculateDeliveryTime(new Date()));
-      } else if (customerInfo.deliveryOption === "express") {
-        const orderTime = new Date();
-        orderTime.setHours(orderTime.getHours() + 1);
-        setEstimatedDelivery(
-          orderTime.toLocaleString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            hour12: true,
-            day: "numeric",
-            month: "short",
-            year: "numeric",
-          })
-        );
+    const handlePrescriptionUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) {
+        const validTypes = ["image/jpeg", "image/png", "application/pdf"];
+        if (!validTypes.includes(file.type)) {
+          alert("Please upload a JPEG, PNG, or PDF file.");
+          return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+          alert("File size must be less than 5MB.");
+          return;
+        }
+        setCustomerInfo({ ...customerInfo, prescription: file });
       }
-    }
-
-    return () => {
-      console.log("Cleaning up modal event listener");
-      document.removeEventListener("mousedown", handleClickOutside, { capture: true });
-      document.body.style.overflow = "unset";
     };
-  }, [isCheckoutOpen, customerInfo.deliveryOption]);
 
-  const handleSubmit = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // For logged in users, only check phone, delivery option, and pickup location
-    // For guests, check all fields including name and email
-    const requiredFieldsValid = memoizedIsLoggedIn 
-      ? customerInfo.phone && customerInfo.deliveryOption && customerInfo.pickupLocation
-      : customerInfo.name && customerInfo.email && customerInfo.phone && customerInfo.deliveryOption && customerInfo.pickupLocation;
+    if (!isCheckoutOpen) return null;
 
-    if (requiredFieldsValid) {
-      initializePayment();
-    } else {
-      const missingFields = [];
-      if (!memoizedIsLoggedIn && !customerInfo.name) missingFields.push("name");
-      if (!memoizedIsLoggedIn && !customerInfo.email) missingFields.push("email");
-      if (!customerInfo.phone) missingFields.push("phone");
-      if (!customerInfo.deliveryOption) missingFields.push("delivery option");
-      if (!customerInfo.pickupLocation) missingFields.push("pickup location");
-      
-      alert(`Please fill in all required fields: ${missingFields.join(", ")}`);
-    }
-  }, [memoizedIsLoggedIn, customerInfo]);
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+        <div
+          ref={modalRef}
+          className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto shadow-2xl transform transition-all"
+        >
+          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-white">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">Complete Your Order</h2>
+                <p className="text-sm text-gray-600 mt-1">Fill in your details to proceed with payment</p>
+              </div>
+              <button
+                onClick={() => {
+                  console.log("Close button clicked");
+                  setIsCheckoutOpen(false);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full active:scale-95 transition-transform"
+              >
+                <X size={24} className="text-gray-500" />
+              </button>
+            </div>
+          </div>
 
-  const handlePrescriptionUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const validTypes = ["image/jpeg", "image/png", "application/pdf"];
-      if (!validTypes.includes(file.type)) {
-        alert("Please upload a JPEG, PNG, or PDF file.");
-        return;
-      }
-      if (file.size > 5 * 1024 * 1024) {
-        alert("File size must be less than 5MB.");
-        return;
-      }
-      setCustomerInfo({ ...customerInfo, prescription: file });
-    }
-  }, [customerInfo]);
+          <form onSubmit={handleSubmit} className="p-6 md:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-5">
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
+                    <User size={18} className="mr-2 text-red-500" />
+                    Full Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={customerInfo.name}
+                    readOnly
+                    className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 bg-gray-100 cursor-not-allowed"
+                  />
+                </div>
 
-  if (!isCheckoutOpen) return null;
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
+                    <User size={18} className="mr-2 text-red-500" />
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={customerInfo.email}
+                    readOnly
+                    className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 bg-gray-100 cursor-not-allowed"
+                  />
+                </div>
 
-  return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div
-        ref={modalRef}
-        className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto shadow-2xl transform transition-all"
-      >
-        <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-white">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-900">Complete Your Order</h2>
-              <p className="text-sm text-gray-600 mt-1">
-                {memoizedIsLoggedIn 
-                  ? "Fill in your delivery details to proceed with payment" 
-                  : "Fill in your details to proceed with payment"
-                }
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
+                    <Phone size={18} className="mr-2 text-red-500" />
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={customerInfo.phone}
+                    onChange={(e) => handleInputChange("phone", e.target.value)}
+                    onFocus={handleFocus}
+                    onBlur={handleBlur}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
+                    placeholder="Enter your phone number"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <label className="block text-sm font-medium mb-2 text-gray-700">
+                    Delivery Option * (Fee: {customerInfo.deliveryOption === "express" ? "₦1,500" : customerInfo.deliveryOption === "timeframe" ? (cartTotal >= 5000 ? "Free" : "₦500") : "Select an option"})
+                  </label>
+                  <div className="space-y-3">
+                    <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        id="express"
+                        name="deliveryOption"
+                        value="express"
+                        checked={customerInfo.deliveryOption === "express"}
+                        onChange={(e) =>
+                          setCustomerInfo({ ...customerInfo, deliveryOption: e.target.value as "express" })
+                        }
+                        className="h-4 w-4 text-red-600 focus:ring-red-500"
+                      />
+                      <div className="ml-3">
+                        <span className="block text-sm font-medium text-gray-800">Express Delivery</span>
+                        <span className="block text-xs text-gray-500">Within 1 hour (₦1,500)</span>
+                      </div>
+                    </label>
+                    <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
+                      <input
+                        type="radio"
+                        id="timeframe"
+                        name="deliveryOption"
+                        value="timeframe"
+                        checked={customerInfo.deliveryOption === "timeframe"}
+                        onChange={(e) =>
+                          setCustomerInfo({ ...customerInfo, deliveryOption: e.target.value as "timeframe" })
+                        }
+                        className="h-4 w-4 text-red-600 focus:ring-red-500"
+                      />
+                      <div className="ml-3">
+                        <span className="block text-sm font-medium text-gray-800">Timeframe Delivery</span>
+                        <span className="block text-xs text-gray-500">{cartTotal >= 5000 ? "Free (12 PM, 4 PM, 9 PM, 6 AM)" : "₦500 (12 PM, 4 PM, 9 PM, 6 AM)"}</span>
+                      </div>
+                    </label>
+                  </div>
+                  {estimatedDelivery && (
+                    <p className="text-sm text-gray-600 mt-3 bg-red-50 p-2 rounded-md">
+                      <span className="font-medium">Estimated Delivery:</span> {estimatedDelivery}
+                    </p>
+                  )}
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
+                    <Home size={18} className="mr-2 text-red-500" />
+                    Pickup Location *
+                  </label>
+                  <select
+                    required
+                    value={customerInfo.pickupLocation}
+                    onChange={(e) =>
+                      setCustomerInfo({
+                        ...customerInfo,
+                        pickupLocation: e.target.value as "Zik" | "Indy" | "Awo" | "Idia" | "Mellanby",
+                      })
+                    }
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
+                  >
+                    <option value="" disabled>
+                      Select a pickup location
+                    </option>
+                    {["Zik", "Indy", "Awo", "Idia", "Mellanby"].map((location) => (
+                      <option key={location} value={location}>
+                        {location}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
+                    <Upload size={18} className="mr-2 text-red-500" />
+                    Upload Prescription (Optional)
+                  </label>
+                  <div className="flex items-center justify-center w-full">
+                    <label className="flex flex-col w-full border-2 border-dashed hover:border-red-300 rounded-lg cursor-pointer">
+                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                        <UploadCloud className="w-8 h-8 text-gray-400" />
+                        <p className="text-sm text-gray-500 mt-2">
+                          <span className="font-semibold">Click to upload</span> or drag and drop
+                        </p>
+                        <p className="text-xs text-gray-400">JPEG, PNG, or PDF (Max 5MB)</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,application/pdf"
+                        onChange={handlePrescriptionUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                  {customerInfo.prescription && (
+                    <p className="text-sm text-gray-600 mt-3 bg-green-50 p-2 rounded-md">
+                      <span className="font-medium">Uploaded:</span> {customerInfo.prescription.name}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-8 pt-6 border-t border-gray-200">
+              <div className="space-y-2 mb-6">
+                <div className="flex justify-between text-black">
+                  <span>Subtotal:</span>
+                  <span>₦{cartTotal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between text-black">
+                  <span>Delivery Fee:</span>
+                  <span>
+                    {customerInfo.deliveryOption
+                      ? customerInfo.deliveryOption === "express"
+                        ? "₦1,500"
+                        : cartTotal >= 5000
+                          ? "Free"
+                          : "₦500"
+                      : "N/A"}
+                  </span>
+                </div>
+                <div className="flex justify-between text-2xl font-bold text-red-600">
+                  <span>Total:</span>
+                  <span>₦{grandTotal.toLocaleString()}</span>
+                </div>
+              </div>
+              <button
+                type="submit"
+                disabled={isProcessing || !isPaystackLoaded}
+                className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white py-4 rounded-xl font-bold hover:from-red-700 hover:to-red-600 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-red-200"
+              >
+                {isProcessing ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                    Processing Payment...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard size={20} className="mr-2" />
+                    Pay ₦{grandTotal.toLocaleString()} with Paystack
+                  </>
+                )}
+              </button>
+              <p className="text-xs text-center text-gray-500 mt-3">
+                Your personal data will be used to process your order and for other purposes described in our privacy policy.
               </p>
             </div>
-            <button
-              onClick={() => {
-                console.log("Close button clicked");
-                setIsCheckoutOpen(false);
-              }}
-              className="p-2 hover:bg-gray-100 rounded-full active:scale-95 transition-transform"
-            >
-              <X size={24} className="text-gray-500" />
-            </button>
-          </div>
+          </form>
         </div>
-
-        <form onSubmit={handleSubmit} className="p-6 md:p-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-5">
-              {/* Show name and email fields only for non-logged in users */}
-              {!memoizedIsLoggedIn && (
-                <>
-                  <div className="bg-gray-50 p-4 rounded-xl">
-                    <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                      <User size={18} className="mr-2 text-red-500" />
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={customerInfo.name}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
-                      placeholder="Enter your full name"
-                    />
-                  </div>
-
-                  <div className="bg-gray-50 p-4 rounded-xl">
-                    <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                      <Mail size={18} className="mr-2 text-red-500" />
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={customerInfo.email}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
-                      placeholder="Enter your email"
-                    />
-                  </div>
-                </>
-              )}
-
-              {/* Show logged in user info if logged in */}
-              {memoizedIsLoggedIn && (
-                <div className="bg-green-50 p-4 rounded-xl border border-green-200">
-                  <div className="flex items-center mb-2">
-                    <User size={18} className="mr-2 text-green-600" />
-                    <span className="text-sm font-medium text-green-800">Logged in as</span>
-                  </div>
-                  <p className="text-sm text-gray-700 font-medium">{customerInfo.name}</p>
-                  <p className="text-sm text-gray-600">{customerInfo.email}</p>
-                </div>
-              )}
-
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                  <Phone size={18} className="mr-2 text-red-500" />
-                  Phone Number *
-                </label>
-                <input
-                  type="tel"
-                  required
-                  value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
-                  placeholder="Enter your phone number"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-5">
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Delivery Option * (Fee: {customerInfo.deliveryOption === "express" ? "₦1,500" : customerInfo.deliveryOption === "timeframe" ? (cartTotal >= 5000 ? "Free" : "₦500") : "Select an option"})
-                </label>
-                <div className="space-y-3">
-                  <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
-                    <input
-                      type="radio"
-                      id="express"
-                      name="deliveryOption"
-                      value="express"
-                      checked={customerInfo.deliveryOption === "express"}
-                      onChange={(e) =>
-                        setCustomerInfo({ ...customerInfo, deliveryOption: e.target.value as "express" })
-                      }
-                      className="h-4 w-4 text-red-600 focus:ring-red-500"
-                    />
-                    <div className="ml-3">
-                      <span className="block text-sm font-medium text-gray-800">Express Delivery</span>
-                      <span className="block text-xs text-gray-500">Within 1 hour (₦1,500)</span>
-                    </div>
-                  </label>
-                  <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
-                    <input
-                      type="radio"
-                      id="timeframe"
-                      name="deliveryOption"
-                      value="timeframe"
-                      checked={customerInfo.deliveryOption === "timeframe"}
-                      onChange={(e) =>
-                        setCustomerInfo({ ...customerInfo, deliveryOption: e.target.value as "timeframe" })
-                      }
-                      className="h-4 w-4 text-red-600 focus:ring-red-500"
-                    />
-                    <div className="ml-3">
-                      <span className="block text-sm font-medium text-gray-800">Timeframe Delivery</span>
-                      <span className="block text-xs text-gray-500">{cartTotal >= 5000 ? "Free (12 PM, 4 PM, 9 PM, 6 AM)" : "₦500 (12 PM, 4 PM, 9 PM, 6 AM)"}</span>
-                    </div>
-                  </label>
-                </div>
-                {estimatedDelivery && (
-                  <p className="text-sm text-gray-600 mt-3 bg-red-50 p-2 rounded-md">
-                    <span className="font-medium">Estimated Delivery:</span> {estimatedDelivery}
-                  </p>
-                )}
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                  <Home size={18} className="mr-2 text-red-500" />
-                  Pickup Location *
-                </label>
-                <select
-                  required
-                  value={customerInfo.pickupLocation}
-                  onChange={(e) =>
-                    setCustomerInfo({
-                      ...customerInfo,
-                      pickupLocation: e.target.value as "Zik" | "Indy" | "Awo" | "Idia" | "Mellanby",
-                    })
-                  }
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
-                >
-                  <option value="" disabled>
-                    Select a pickup location
-                  </option>
-                  {["Zik", "Indy", "Awo", "Idia", "Mellanby"].map((location) => (
-                    <option key={location} value={location}>
-                      {location}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                  <Upload size={18} className="mr-2 text-red-500" />
-                  Upload Prescription (Optional)
-                </label>
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col w-full border-2 border-dashed hover:border-red-300 rounded-lg cursor-pointer">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <UploadCloud className="w-8 h-8 text-gray-400" />
-                      <p className="text-sm text-gray-500 mt-2">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-400">JPEG, PNG, or PDF (Max 5MB)</p>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,application/pdf"
-                      onChange={handlePrescriptionUpload}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-                {customerInfo.prescription && (
-                  <p className="text-sm text-gray-600 mt-3 bg-green-50 p-2 rounded-md">
-                    <span className="font-medium">Uploaded:</span> {customerInfo.prescription.name}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 pt-6 border-t border-gray-200">
-            <div className="space-y-2 mb-6">
-              <div className="flex justify-between text-black">
-                <span>Subtotal:</span>
-                <span>₦{cartTotal.toLocaleString()}</span>
-              </div>
-              <div className="flex justify-between text-black">
-                <span>Delivery Fee:</span>
-                <span>
-                  {customerInfo.deliveryOption
-                    ? customerInfo.deliveryOption === "express"
-                      ? "₦1,500"
-                      : cartTotal >= 5000
-                        ? "Free"
-                        : "₦500"
-                    : "N/A"}
-                </span>
-              </div>
-              <div className="flex justify-between text-2xl font-bold text-red-600">
-                <span>Total:</span>
-                <span>₦{grandTotal.toLocaleString()}</span>
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={isProcessing || !isPaystackLoaded}
-              className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white py-4 rounded-xl font-bold hover:from-red-700 hover:to-red-600 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-red-200"
-            >
-              {isProcessing ? (
-                <>
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Processing Payment...
-                </>
-              ) : (
-                <>
-                  <CreditCard size={20} className="mr-2" />
-                  Pay ₦{grandTotal.toLocaleString()} with Paystack
-                </>
-              )}
-            </button>
-            <p className="text-xs text-center text-gray-500 mt-3">
-              Your personal data will be used to process your order and for other purposes described in our privacy policy.
-            </p>
-          </div>
-        </form>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   const OrderCompleteModal = () => {
     if (!orderComplete) return null;
@@ -1050,7 +1043,7 @@ const PharmacyApp: React.FC = () => {
           <h2 className="text-2xl font-bold text-green-600 mb-2">Order Successful!</h2>
           <p className="text-gray-600 mb-6">
             Your order has been placed successfully. You will receive a confirmation email shortly, and your items will
-            be delivered within 24-48 hours.
+            be delivered {estimatedDelivery || "soon"}.
           </p>
           <button
             onClick={() => setOrderComplete(false)}
@@ -1102,7 +1095,9 @@ const PharmacyApp: React.FC = () => {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchInputChange(e.target.value)}
+              onFocus={handleFocus}
+              onBlur={handleBlur}
               placeholder="Search medications..."
               className="w-full p-1 lg:p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-black"
             />
@@ -1170,6 +1165,7 @@ const PharmacyApp: React.FC = () => {
                         ? "bg-red-500 text-white hover:bg-red-600"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
+                    aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
                   >
                     {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
                   </button>
@@ -1190,7 +1186,7 @@ const PharmacyApp: React.FC = () => {
                 >
                   <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
                     <img
-                      src={`${product.image}`}
+                      src={`https://ollanbackend.vercel.app${product.image}`}
                       alt={product.name}
                       className="h-40 object-contain max-w-full"
                       loading="lazy"
@@ -1221,6 +1217,7 @@ const PharmacyApp: React.FC = () => {
                         ? "bg-red-500 text-white hover:bg-red-600"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
+                    aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
                   >
                     {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
                   </button>
@@ -1240,7 +1237,7 @@ const PharmacyApp: React.FC = () => {
               >
                 <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
                   <img
-                    src={`${product.image}`}
+                    src={`https://ollanbackend.vercel.app${product.image}`}
                     alt={product.name}
                     className="h-40 object-contain max-w-full"
                     loading="lazy"
@@ -1271,6 +1268,7 @@ const PharmacyApp: React.FC = () => {
                       ? "bg-red-500 text-white hover:bg-red-600"
                       : "bg-gray-300 text-gray-500 cursor-not-allowed"
                   }`}
+                  aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
                 >
                   {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
                 </button>

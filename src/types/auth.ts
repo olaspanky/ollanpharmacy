@@ -3,6 +3,7 @@ export interface User {
   email: string;
   name: string;
   role: 'customer' | 'admin';
+  _id?: string; // Optional for compatibility with JWT payload
 }
 
 export interface AuthResponse {
