@@ -724,6 +724,8 @@ const PharmacyApp: React.FC = () => {
 
   const CheckoutModal = () => {
     const modalRef = useRef<HTMLDivElement>(null);
+    const user = useAuth();
+    console.log("Checkout modal opened, user:", user);
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
@@ -797,6 +799,8 @@ const PharmacyApp: React.FC = () => {
         setCustomerInfo({ ...customerInfo, prescription: file });
       }
     };
+
+    console.log("Checkout modal opened, customerInfo:", customerInfo);
 
     if (!isCheckoutOpen) return null;
 
@@ -1126,7 +1130,7 @@ const PharmacyApp: React.FC = () => {
         {popularProducts.length > 0 && (
           <div className="mb-12">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Popular Medications</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
               {popularProducts.map((product) => (
                 <div
                   key={product._id}
@@ -1178,7 +1182,7 @@ const PharmacyApp: React.FC = () => {
         {otcProducts.length > 0 && (
           <div className="mb-12">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Over-the-Counter (OTC)</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
               {otcProducts.map((product) => (
                 <div
                   key={product._id}
@@ -1229,7 +1233,7 @@ const PharmacyApp: React.FC = () => {
 
         <div className="mb-12">
           <h3 className="text-2xl font-bold text-gray-900 mb-4">All Medications</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
             {allProducts.map((product) => (
               <div
                 key={product._id}
