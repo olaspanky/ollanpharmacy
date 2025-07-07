@@ -260,7 +260,7 @@ const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({ links 
         </div>
 
         {/* Mobile Search Bar */}
-        <div className="md:hidden pb-4">
+        {/* <div className="md:hidden pb-4">
           <form onSubmit={handleSearch}>
             <div className="flex items-center bg-gray-50 rounded-full px-4 py-2 border border-gray-200 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 transition-all">
               <input
@@ -279,7 +279,7 @@ const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({ links 
               </button>
             </div>
           </form>
-        </div>
+        </div> */}
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (

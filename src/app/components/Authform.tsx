@@ -124,7 +124,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
     setIsLoading(true);
 
-   try {
+try {
   if (type === "signup") {
     const res = await fetch("https://ollanbackend.vercel.app/api/auth/signup", {
       method: "POST",
@@ -139,9 +139,12 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
     if (!res.ok) {
       throw new Error(data.message || "Signup failed");
     }
-    console.log("Signup response:", JSON.stringify(data, null, 2)); // Enhanced logging
-    if (data.token) {
+    console.log("Signup response:", JSON.stringify(data, null, 2));
+    if (data.token && data.user) {
       localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user)); // Store user object
+      console.log("Token saved to localStorage:", data.token);
+      console.log("User saved to localStorage:", data.user);
       setUser(data.user);
       showNotification("success", "Account created successfully!");
       setTimeout(() => router.push("/pages/shop"), 1000);
@@ -159,15 +162,18 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
     if (!res.ok) {
       throw new Error(data.message || "Signin failed");
     }
-    console.log("Signin response:", JSON.stringify(data, null, 2)); // Enhanced logging
-    if (data.token) {
+    console.log("Signin response:", JSON.stringify(data, null, 2));
+    if (data.token && data.user) {
       localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user)); // Store user object
+      console.log("Token saved to localStorage:", data.token);
+      console.log("User saved to localStorage:", data.user);
       setUser(data.user);
       showNotification("success", "Welcome back!");
       setTimeout(() => router.push("/pages/shop"), 1000);
     }
   }
-}  catch (error: any) {
+} catch (error: any) {
       console.error("Auth error:", {
         message: error.message,
       });
