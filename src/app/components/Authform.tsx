@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"; // Removed useSearchParams
 import { useState, useEffect, useRef } from "react";
-import { Eye, EyeOff, Lock, Mail, User, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
+import { Eye, EyeOff, Lock, Mail, UserRound, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
 type AuthFormProps = {
@@ -255,7 +255,7 @@ try {
             {type === "signup" && (
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <User className="w-4 h-4" />
+                  <UserRound className="w-4 h-4" />
                   Full Name
                 </label>
                 <input
