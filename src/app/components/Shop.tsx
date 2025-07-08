@@ -236,7 +236,7 @@ const PharmacyApp: React.FC = () => {
   const allProducts = searchedProducts;
 
   // Calculate cart totals
-  const cartTotal = cart.reduce((total, item) => total + item.productId.price * item.quantity, 0);
+  const cartTotal = cart.reduce((total, item) => total + item.productId?.price * item?.quantity, 0);
   const deliveryFee = cartTotal > 0
     ? customerInfo.deliveryOption === "express"
       ? 1500
@@ -531,7 +531,7 @@ const PharmacyApp: React.FC = () => {
             />
             <div>
               <h3 className="font-medium text-gray-900">{selectedProduct.name}</h3>
-              <p className="text-red-500 font-bold">₦{selectedProduct.price.toLocaleString()}</p>
+              <p className="text-red-500 font-bold">₦{selectedProduct?.price.toLocaleString()}</p>
             </div>
           </div>
           <div className="flex items-center space-x-4">
@@ -636,7 +636,7 @@ const PharmacyApp: React.FC = () => {
                         />
                         <div className="flex-1">
                           <h3 className="font-medium text-gray-900">{item.productId.name}</h3>
-                          <p className="text-red-500 font-bold">₦{item.productId.price.toLocaleString()}</p>
+                          <p className="text-red-500 font-bold">₦{item.productId?.price.toLocaleString()}</p>
                           <div className="flex items-center space-x-2 mt-2">
                             <button
                               onClick={() =>
@@ -877,7 +877,7 @@ const PharmacyApp: React.FC = () => {
                       {product.name}
                     </h4>
                     <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
-                      ₦{product.price.toLocaleString()}
+                      ₦{product?.price.toLocaleString()}
                     </p>
                     {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
                   </div>
@@ -929,7 +929,7 @@ const PharmacyApp: React.FC = () => {
                       {product.name}
                     </h4>
                     <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
-                      ₦{product.price.toLocaleString()}
+                      ₦{product?.price.toLocaleString()}
                     </p>
                     {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
                   </div>
@@ -983,7 +983,7 @@ const PharmacyApp: React.FC = () => {
                       {product.name}
                     </h4>
                     <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
-                      ₦{product.price.toLocaleString()}
+                      ₦{product?.price.toLocaleString()}
                     </p>
                     {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
                   </div>
