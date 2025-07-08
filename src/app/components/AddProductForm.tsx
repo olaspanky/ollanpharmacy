@@ -205,6 +205,7 @@ const AddProductForm: React.FC = () => {
             <option value="Vitamins and Supplements">Vitamins and Supplements</option>
             <option value="Baby care">Baby care</option>
             <option value="Prescription">Prescription</option>
+            <option value="Supermarket">Supermarket</option>
           </select>
         </div>
         <div>
