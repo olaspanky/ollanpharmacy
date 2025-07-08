@@ -1,7 +1,8 @@
+// app/PharmacyApp.tsx
 "use client";
 
 import React, { useState, useRef, useEffect, useReducer, useCallback } from "react";
-import { ShoppingCart, Plus, Minus, X, CreditCard, Phone, User, Search, Upload, UploadCloud, Home } from "lucide-react";
+import { ShoppingCart, Plus, Minus, X, Search, Home } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import logo from "../../../public/ollogo.svg";
@@ -9,6 +10,7 @@ import { useAuth } from "../../context/AuthContext";
 import { Product, CartItem } from "../../types";
 import { useRouter } from "next/navigation";
 import api from "@/src/lib/api";
+import CheckoutModal from "./CheckoutModal";
 
 // Paystack type declaration
 interface PaystackPop {
@@ -36,7 +38,7 @@ declare global {
   }
 }
 
-// Cart reducer (unchanged)
+// Cart reducer
 type CartAction =
   | { type: "ADD_ITEM"; payload: CartItem }
   | { type: "REMOVE_ITEM"; payload: string }
@@ -89,6 +91,7 @@ const PharmacyApp: React.FC = () => {
   const { user } = useAuth();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>("All Category");
+  const [viewMode, setViewMode] = useState<"Pharmacy" | "Supermarket">("Pharmacy");
   const [cart, cartDispatch] = useReducer(cartReducer, []);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [isCheckoutOpen, setIsCheckoutOpen] = useState<boolean>(false);
@@ -110,7 +113,6 @@ const PharmacyApp: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>(["All Category"]);
   const [isPaystackLoaded, setIsPaystackLoaded] = useState<boolean>(false);
-  const activeInputRef = useRef<HTMLInputElement | null>(null);
 
   // Sync customerInfo with user
   useEffect(() => {
@@ -211,9 +213,11 @@ const PharmacyApp: React.FC = () => {
 
   // Filter products
   const filteredProducts =
-    selectedCategory === "All Category"
-      ? products
-      : products.filter((product) => product.category === selectedCategory);
+    viewMode === "Supermarket"
+      ? products.filter((product) => product.category === "Supermarket")
+      : selectedCategory === "All Category"
+        ? products
+        : products.filter((product) => product.category === selectedCategory);
 
   const searchedProducts = searchQuery
     ? filteredProducts.filter((product) =>
@@ -477,18 +481,6 @@ const PharmacyApp: React.FC = () => {
     []
   );
 
-  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    activeInputRef.current = e.target;
-  };
-
-  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-    if (activeInputRef.current === e.target) {
-      setTimeout(() => {
-        e.target.focus();
-      }, 0);
-    }
-  };
-
   const QuantityModal = () => {
     const modalRef = useRef<HTMLDivElement>(null);
 
@@ -722,317 +714,6 @@ const PharmacyApp: React.FC = () => {
     );
   };
 
-  const CheckoutModal = () => {
-    const modalRef = useRef<HTMLDivElement>(null);
-    const user = useAuth();
-    console.log("Checkout modal opened, user:", user);
-
-    useEffect(() => {
-      const handleClickOutside = (event: MouseEvent) => {
-        if (
-          modalRef.current &&
-          !modalRef.current.contains(event.target as Node) &&
-          !(event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
-        ) {
-          console.log("Clicked outside modal, closing...");
-          setIsCheckoutOpen(false);
-        }
-      };
-
-      if (isCheckoutOpen) {
-        console.log("Modal opened, adding click outside listener");
-        document.addEventListener("mousedown", handleClickOutside);
-        document.body.style.overflow = "hidden";
-
-        if (customerInfo.deliveryOption === "timeframe") {
-          setEstimatedDelivery(calculateDeliveryTime(new Date()));
-        } else if (customerInfo.deliveryOption === "express") {
-          const orderTime = new Date();
-          orderTime.setHours(orderTime.getHours() + 1);
-          setEstimatedDelivery(
-            orderTime.toLocaleString("en-US", {
-              hour: "numeric",
-              minute: "2-digit",
-              hour12: true,
-              day: "numeric",
-              month: "short",
-              year: "numeric",
-            })
-          );
-        }
-      }
-
-      return () => {
-        console.log("Cleaning up modal event listener");
-        document.removeEventListener("mousedown", handleClickOutside);
-        document.body.style.overflow = "unset";
-      };
-    }, [isCheckoutOpen, customerInfo.deliveryOption]);
-
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (
-        customerInfo.name &&
-        customerInfo.email &&
-        customerInfo.phone &&
-        customerInfo.deliveryOption &&
-        customerInfo.pickupLocation
-      ) {
-        initializePayment();
-      } else {
-        alert("Please fill in all required fields, including delivery option and pickup location");
-      }
-    };
-
-    const handlePrescriptionUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (file) {
-        const validTypes = ["image/jpeg", "image/png", "application/pdf"];
-        if (!validTypes.includes(file.type)) {
-          alert("Please upload a JPEG, PNG, or PDF file.");
-          return;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-          alert("File size must be less than 5MB.");
-          return;
-        }
-        setCustomerInfo({ ...customerInfo, prescription: file });
-      }
-    };
-
-    console.log("Checkout modal opened, customerInfo:", customerInfo);
-
-    if (!isCheckoutOpen) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-        <div
-          ref={modalRef}
-          className="bg-white rounded-2xl w-full max-w-4xl max-h-[95vh] overflow-y-auto shadow-2xl transform transition-all"
-        >
-          <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-red-50 to-white">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-900">Complete Your Order</h2>
-                <p className="text-sm text-gray-600 mt-1">Fill in your details to proceed with payment</p>
-              </div>
-              <button
-                onClick={() => {
-                  console.log("Close button clicked");
-                  setIsCheckoutOpen(false);
-                }}
-                className="p-2 hover:bg-gray-100 rounded-full active:scale-95 transition-transform"
-              >
-                <X size={24} className="text-gray-500" />
-              </button>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="p-6 md:p-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-5">
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                    <User size={18} className="mr-2 text-red-500" />
-                    Full Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={customerInfo.name}
-                    readOnly
-                    className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 bg-gray-100 cursor-not-allowed"
-                  />
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                    <User size={18} className="mr-2 text-red-500" />
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={customerInfo.email}
-                    readOnly
-                    className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 bg-gray-100 cursor-not-allowed"
-                  />
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                    <Phone size={18} className="mr-2 text-red-500" />
-                    Phone Number *
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={customerInfo.phone}
-                    onChange={(e) => handleInputChange("phone", e.target.value)}
-                    onFocus={handleFocus}
-                    onBlur={handleBlur}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
-                    placeholder="Enter your phone number"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-5">
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <label className="block text-sm font-medium mb-2 text-gray-700">
-                    Delivery Option * (Fee: {customerInfo.deliveryOption === "express" ? "₦1,500" : customerInfo.deliveryOption === "timeframe" ? (cartTotal >= 5000 ? "Free" : "₦500") : "Select an option"})
-                  </label>
-                  <div className="space-y-3">
-                    <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
-                      <input
-                        type="radio"
-                        id="express"
-                        name="deliveryOption"
-                        value="express"
-                        checked={customerInfo.deliveryOption === "express"}
-                        onChange={(e) =>
-                          setCustomerInfo({ ...customerInfo, deliveryOption: e.target.value as "express" })
-                        }
-                        className="h-4 w-4 text-red-600 focus:ring-red-500"
-                      />
-                      <div className="ml-3">
-                        <span className="block text-sm font-medium text-gray-800">Express Delivery</span>
-                        <span className="block text-xs text-gray-500">Within 1 hour (₦1,500)</span>
-                      </div>
-                    </label>
-                    <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
-                      <input
-                        type="radio"
-                        id="timeframe"
-                        name="deliveryOption"
-                        value="timeframe"
-                        checked={customerInfo.deliveryOption === "timeframe"}
-                        onChange={(e) =>
-                          setCustomerInfo({ ...customerInfo, deliveryOption: e.target.value as "timeframe" })
-                        }
-                        className="h-4 w-4 text-red-600 focus:ring-red-500"
-                      />
-                      <div className="ml-3">
-                        <span className="block text-sm font-medium text-gray-800">Timeframe Delivery</span>
-                        <span className="block text-xs text-gray-500">{cartTotal >= 5000 ? "Free (12 PM, 4 PM, 9 PM, 6 AM)" : "₦500 (12 PM, 4 PM, 9 PM, 6 AM)"}</span>
-                      </div>
-                    </label>
-                  </div>
-                  {estimatedDelivery && (
-                    <p className="text-sm text-gray-600 mt-3 bg-red-50 p-2 rounded-md">
-                      <span className="font-medium">Estimated Delivery:</span> {estimatedDelivery}
-                    </p>
-                  )}
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                    <Home size={18} className="mr-2 text-red-500" />
-                    Pickup Location *
-                  </label>
-                  <select
-                    required
-                    value={customerInfo.pickupLocation}
-                    onChange={(e) =>
-                      setCustomerInfo({
-                        ...customerInfo,
-                        pickupLocation: e.target.value as "Zik" | "Indy" | "Awo" | "Idia" | "Mellanby",
-                      })
-                    }
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
-                  >
-                    <option value="" disabled>
-                      Select a pickup location
-                    </option>
-                    {["Zik", "Indy", "Awo", "Idia", "Mellanby"].map((location) => (
-                      <option key={location} value={location}>
-                        {location}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="bg-gray-50 p-4 rounded-xl">
-                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                    <Upload size={18} className="mr-2 text-red-500" />
-                    Upload Prescription (Optional)
-                  </label>
-                  <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col w-full border-2 border-dashed hover:border-red-300 rounded-lg cursor-pointer">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <UploadCloud className="w-8 h-8 text-gray-400" />
-                        <p className="text-sm text-gray-500 mt-2">
-                          <span className="font-semibold">Click to upload</span> or drag and drop
-                        </p>
-                        <p className="text-xs text-gray-400">JPEG, PNG, or PDF (Max 5MB)</p>
-                      </div>
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,application/pdf"
-                        onChange={handlePrescriptionUpload}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                  {customerInfo.prescription && (
-                    <p className="text-sm text-gray-600 mt-3 bg-green-50 p-2 rounded-md">
-                      <span className="font-medium">Uploaded:</span> {customerInfo.prescription.name}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-8 pt-6 border-t border-gray-200">
-              <div className="space-y-2 mb-6">
-                <div className="flex justify-between text-black">
-                  <span>Subtotal:</span>
-                  <span>₦{cartTotal.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-black">
-                  <span>Delivery Fee:</span>
-                  <span>
-                    {customerInfo.deliveryOption
-                      ? customerInfo.deliveryOption === "express"
-                        ? "₦1,500"
-                        : cartTotal >= 5000
-                          ? "Free"
-                          : "₦500"
-                      : "N/A"}
-                  </span>
-                </div>
-                <div className="flex justify-between text-2xl font-bold text-red-600">
-                  <span>Total:</span>
-                  <span>₦{grandTotal.toLocaleString()}</span>
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={isProcessing || !isPaystackLoaded}
-                className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white py-4 rounded-xl font-bold hover:from-red-700 hover:to-red-600 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-red-200"
-              >
-                {isProcessing ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Processing Payment...
-                  </>
-                ) : (
-                  <>
-                    <CreditCard size={20} className="mr-2" />
-                    Pay ₦{grandTotal.toLocaleString()} with Paystack
-                  </>
-                )}
-              </button>
-              <p className="text-xs text-center text-gray-500 mt-3">
-                Your personal data will be used to process your order and for other purposes described in our privacy policy.
-              </p>
-            </div>
-          </form>
-        </div>
-      </div>
-    );
-  };
-
   const OrderCompleteModal = () => {
     if (!orderComplete) return null;
 
@@ -1062,36 +743,73 @@ const PharmacyApp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm sticky top-0 z-40">
+      <header className="bg-gradient-to-r from-white via-gray-50 to-white backdrop-blur-md shadow-lg border-b border-gray-100 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center">
-                <Link href="/">
-                  <div className="p-2 rounded-lg mr-3">
-                    <Image src={logo} alt="Ollan Logo" width={80} height={80} className="lg:w-20 w-12" />
-                  </div>
-                </Link>
+            <div className="flex items-center">
+              <Link href="/">
+                <div className="p-2 rounded-xl mr-4 bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 transition-all duration-300 transform hover:scale-105 shadow-sm">
+                  <Image src={logo} alt="Ollan Logo" width={80} height={80} className="lg:w-20 w-12 filter drop-shadow-sm" />
+                </div>
+              </Link>
+              <div className="flex space-x-1 bg-gray-100 p-1 rounded-full shadow-inner">
+                <button
+                  className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
+                    viewMode === "Pharmacy" 
+                      ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30" 
+                      : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
+                  }`}
+                  onClick={() => {
+                    setViewMode("Pharmacy");
+                    setSelectedCategory("All Category");
+                  }}
+                  aria-label="Switch to Pharmacy view"
+                >
+                  <span className="flex items-center gap-2">
+                    💊 Pharmacy
+                  </span>
+                </button>
+                <button
+                  className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
+                    viewMode === "Supermarket" 
+                      ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30" 
+                      : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
+                  }`}
+                  onClick={() => {
+                    setViewMode("Supermarket");
+                    setSelectedCategory("Supermarket");
+                  }}
+                  aria-label="Switch to Supermarket view"
+                >
+                  <span className="flex items-center gap-2">
+                    🛒 Supermarket
+                  </span>
+                </button>
               </div>
             </div>
             <button
               onClick={() => setIsCartOpen(true)}
-              className="relative p-3 bg-red-500 text-white rounded-full hover:bg-red-600 active:scale-95 transition-all"
+              className="relative p-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl hover:from-red-600 hover:to-red-700 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/30 group"
+              aria-label="Open cart"
             >
-              <ShoppingCart size={24} />
+              <ShoppingCart size={24} className="group-hover:animate-pulse" />
               {cart.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-yellow-400 text-black text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center">
+                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-xs font-bold rounded-full h-7 w-7 flex items-center justify-center shadow-lg border-2 border-white animate-bounce">
                   {cart.reduce((total, item) => total + item.quantity, 0)}
                 </span>
               )}
+              <div className="absolute inset-0 bg-white rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
             </button>
           </div>
         </div>
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-200 to-transparent"></div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <h2 className="lg:text-3xl text-xl font-bold text-gray-900 mb-8 text-center md:text-left">
-          Shop trusted medications, wellness products, and groceries
+          {viewMode === "Pharmacy"
+            ? "Shop trusted medications, wellness products, and groceries"
+            : "Explore our supermarket products"}
         </h2>
 
         <div className="mb-8">
@@ -1100,34 +818,36 @@ const PharmacyApp: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => handleSearchInputChange(e.target.value)}
-              onFocus={handleFocus}
-              onBlur={handleBlur}
-              placeholder="Search medications..."
+              placeholder={viewMode === "Pharmacy" ? "Search medications..." : "Search supermarket products..."}
               className="w-full p-1 lg:p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-black"
+              aria-label="Search products"
             />
             <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           </div>
         </div>
 
-        <div className="mb-8">
-          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 md:flex-wrap md:justify-start md:overflow-visible">
-            {categories.map((category) => (
-              <button
-                key={category}
-                className={`px-4 py-2 rounded-full text-[12px] lg:text-sm font-medium transition-all duration-200 active:scale-95 whitespace-nowrap flex-shrink-0 ${
-                  selectedCategory === category
-                    ? "bg-red-500 text-white shadow-md"
-                    : "bg-white text-black hover:bg-gray-100 shadow-sm"
-                }`}
-                onClick={() => setSelectedCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
+        {viewMode === "Pharmacy" && (
+          <div className="mb-8">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 md:flex-wrap md:justify-start md:overflow-visible">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  className={`px-4 py-2 rounded-full text-[12px] lg:text-sm font-medium transition-all duration-200 active:scale-95 whitespace-nowrap flex-shrink-0 ${
+                    selectedCategory === category
+                      ? "bg-red-500 text-white shadow-md"
+                      : "bg-white text-black hover:bg-gray-100 shadow-sm"
+                  }`}
+                  onClick={() => setSelectedCategory(category)}
+                  aria-label={`Filter by ${category}`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
-        {popularProducts.length > 0 && (
+        {viewMode === "Pharmacy" && popularProducts.length > 0 && (
           <div className="mb-12">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Popular Medications</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
@@ -1179,7 +899,7 @@ const PharmacyApp: React.FC = () => {
           </div>
         )}
 
-        {otcProducts.length > 0 && (
+        {viewMode === "Pharmacy" && otcProducts.length > 0 && (
           <div className="mb-12">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Over-the-Counter (OTC)</h3>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
@@ -1232,59 +952,79 @@ const PharmacyApp: React.FC = () => {
         )}
 
         <div className="mb-12">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">All Medications</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
-            {allProducts.map((product) => (
-              <div
-                key={product._id}
-                className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
-              >
-                <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
-                  <img
-                    src={`https://ollanbackend.vercel.app${product.image}`}
-                    alt={product.name}
-                    className="h-40 object-contain max-w-full"
-                    loading="lazy"
-                  />
-                  {product.stock === 0 && (
-                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-semibold">Out of Stock</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-grow">
-                  <h4
-                    className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
-                    title={product.name}
-                  >
-                    {product.name}
-                  </h4>
-                  <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
-                    ₦{product.price.toLocaleString()}
-                  </p>
-                  {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
-                </div>
-                <button
-                  onClick={() => openQuantityModal(product)}
-                  disabled={product.stock === 0}
-                  className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
-                    product.stock > 0
-                      ? "bg-red-500 text-white hover:bg-red-600"
-                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  }`}
-                  aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">
+            {viewMode === "Pharmacy" ? "All Medications" : "Supermarket Products"}
+          </h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
+            {allProducts.length > 0 ? (
+              allProducts.map((product) => (
+                <div
+                  key={product._id}
+                  className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
                 >
-                  {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                </button>
+                  <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
+                    <img
+                      src={`https://ollanbackend.vercel.app${product.image}`}
+                      alt={product.name}
+                      className="h-40 object-contain max-w-full"
+                      loading="lazy"
+                    />
+                    {product.stock === 0 && (
+                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                        <span className="text-white font-semibold">Out of Stock</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-grow">
+                    <h4
+                      className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
+                      title={product.name}
+                    >
+                      {product.name}
+                    </h4>
+                    <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
+                      ₦{product.price.toLocaleString()}
+                    </p>
+                    {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
+                  </div>
+                  <button
+                    onClick={() => openQuantityModal(product)}
+                    disabled={product.stock === 0}
+                    className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
+                      product.stock > 0
+                        ? "bg-red-500 text-white hover:bg-red-600"
+                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                    }`}
+                    aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
+                  >
+                    {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                  </button>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <p className="text-gray-500">No products found</p>
               </div>
-            ))}
+            )}
           </div>
         </div>
       </main>
 
       <QuantityModal />
       <CartModal />
-      <CheckoutModal />
+      <CheckoutModal
+        isOpen={isCheckoutOpen}
+        setIsOpen={setIsCheckoutOpen}
+        customerInfo={customerInfo}
+        setCustomerInfo={setCustomerInfo}
+        cartTotal={cartTotal}
+        deliveryFee={deliveryFee}
+        grandTotal={grandTotal}
+        estimatedDelivery={estimatedDelivery}
+        isProcessing={isProcessing}
+        isPaystackLoaded={isPaystackLoaded}
+        initializePayment={initializePayment}
+      />
       <OrderCompleteModal />
     </div>
   );

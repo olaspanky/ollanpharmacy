@@ -1,4 +1,3 @@
-// src/components/AddProductForm.jsx
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
@@ -51,11 +50,12 @@ const AddProductForm: React.FC = () => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const validTypes = ["image/jpeg", "image/png"];
-      if (!validTypes.includes(file.type)) {
-        setError("Please upload a JPEG or PNG image.");
+      // Optional: Validate that the file is an image
+      if (!file.type.startsWith("image/")) {
+        setError("Please upload a valid image file.");
         return;
       }
+      // Optional: Check file size (5MB limit)
       if (file.size > 5 * 1024 * 1024) {
         setError("Image size must be less than 5MB.");
         return;
@@ -96,12 +96,11 @@ const AddProductForm: React.FC = () => {
     try {
       const token = localStorage.getItem("token");
       const baseURL = process.env.NEXT_PUBLIC_API_URL || "https://ollanbackend.vercel.app";
-      
+
       const response = await fetch(`${baseURL}/api/products/create`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          // Don't set Content-Type for FormData - let the browser set it
         },
         body: data,
       });
@@ -113,7 +112,7 @@ const AddProductForm: React.FC = () => {
 
       const result = await response.json();
       console.log("Product response:", result); // Debug
-      
+
       alert("Product created successfully!");
       setFormData({ name: "", description: "", price: "", stock: "", category: "", image: null });
       setPreview(null);
@@ -209,12 +208,12 @@ const AddProductForm: React.FC = () => {
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium mb-2 text-black">Image (JPEG/PNG)</label>
+          <label className="block text-sm font-medium mb-2 text-black">Image (Any Image Type)</label>
           <div className="relative">
             <input
               type="file"
               name="image"
-              accept="image/jpeg,image/png"
+              accept="image/*"
               onChange={handleFileChange}
               ref={fileInputRef}
               className="w-full p-3 border rounded-lg text-black"
