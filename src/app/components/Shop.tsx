@@ -44,35 +44,55 @@ type CartAction =
   | { type: "REMOVE_ITEM"; payload: string }
   | { type: "UPDATE_QUANTITY"; payload: { id: string; quantity: number } }
   | { type: "SET_CART"; payload: CartItem[] }
-  | { type: "CLEAR_CART" };
+  | { type: "CLEAR_CART" }
+  | { type: "CLEANUP_CART" };
 
 const cartReducer = (state: CartItem[], action: CartAction): CartItem[] => {
   switch (action.type) {
     case "ADD_ITEM":
-      const existingItem = state.find((item) => item.productId._id === action.payload.productId._id);
+      // Check if the payload has a valid productId
+      if (!action.payload?.productId?._id) {
+        console.warn("Attempted to add item with invalid productId:", action.payload);
+        return state;
+      }
+      
+      const existingItem = state.find((item) => 
+        item?.productId?._id === action.payload.productId._id
+      );
+      
       if (existingItem) {
         return state.map((item) =>
-          item.productId._id === action.payload.productId._id
+          item?.productId?._id === action.payload.productId._id
             ? { ...item, quantity: item.quantity + action.payload.quantity }
             : item
         );
       }
       return [...state, action.payload];
+
     case "REMOVE_ITEM":
-      return state.filter((item) => item.productId._id !== action.payload);
+      return state.filter((item) => item?.productId?._id !== action.payload);
+
     case "UPDATE_QUANTITY":
       if (action.payload.quantity <= 0) {
-        return state.filter((item) => item.productId._id !== action.payload.id);
+        return state.filter((item) => item?.productId?._id !== action.payload.id);
       }
       return state.map((item) =>
-        item.productId._id === action.payload.id
+        item?.productId?._id === action.payload.id
           ? { ...item, quantity: action.payload.quantity }
           : item
       );
+
     case "SET_CART":
-      return action.payload;
+      // Filter out items with null/undefined productId when setting cart
+      return action.payload.filter((item) => item?.productId?._id);
+
     case "CLEAR_CART":
       return [];
+
+    case "CLEANUP_CART":
+      // New action to clean up invalid cart items
+      return state.filter((item) => item?.productId?._id);
+
     default:
       return state;
   }
@@ -618,96 +638,100 @@ const PharmacyApp: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-6">
-              {cart.length === 0 ? (
-                <div className="text-center py-8">
-                  <ShoppingCart className="mx-auto mb-4 text-gray-400" size={48} />
-                  <p className="text-gray-500">Your cart is empty</p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-4 mb-6">
-                    {cart.map((item) => (
-                      <div key={item.productId._id} className="flex items-center space-x-4 p-4 border rounded-lg">
-                        <img
-                          src={`${item.productId.image}`}
-                          alt={item.productId.name}
-                          className="w-16 h-16 object-contain bg-gray-50 rounded"
-                        />
-                        <div className="flex-1">
-                          <h3 className="font-medium text-gray-900">{item.productId.name}</h3>
-                          <p className="text-red-500 font-bold">₦{item.productId?.price.toLocaleString()}</p>
-                          <div className="flex items-center space-x-2 mt-2">
-                            <button
-                              onClick={() =>
-                                cartDispatch({
-                                  type: "UPDATE_QUANTITY",
-                                  payload: { id: item.productId._id, quantity: item.quantity - 1 },
-                                })
-                              }
-                              className="p-1 bg-gray-100 rounded-full hover:bg-gray-200 active:scale-95 transition-transform"
-                            >
-                              <Minus size={16} />
-                            </button>
-                            <span className="w-8 text-center text-black">{item.quantity}</span>
-                            <button
-                              onClick={() =>
-                                cartDispatch({
-                                  type: "UPDATE_QUANTITY",
-                                  payload: { id: item.productId._id, quantity: item.quantity + 1 },
-                                })
-                              }
-                              className="p-1 bg-gray-100 rounded-full hover:bg-gray-200 active:scale-95 transition-transform"
-                            >
-                              <Plus size={16} />
-                            </button>
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => removeFromCart(item.productId._id)}
-                          className="p-1 hover:bg-red-100 text-red-500 rounded active:scale-95 transition-transform"
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="border-t pt-4 space-y-2">
-                    <div className="flex justify-between text-black">
-                      <span>Subtotal:</span>
-                      <span>₦{cartTotal.toLocaleString()}</span>
-                    </div>
-                    <div className="flex justify-between text-black">
-                      <span>Delivery Fee:</span>
-                      <span>
-                        {customerInfo.deliveryOption
-                          ? customerInfo.deliveryOption === "express"
-                            ? "₦1,500"
-                            : cartTotal >= 5000
-                              ? "Free"
-                              : "₦500"
-                          : "Select at checkout"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between font-bold text-lg border-t pt-2 text-black">
-                      <span>Total:</span>
-                      <span>₦{grandTotal.toLocaleString()}</span>
-                    </div>
-                  </div>
-
+          <div className="p-6">
+  {cart.length === 0 ? (
+    <div className="text-center py-8">
+      <ShoppingCart className="mx-auto mb-4 text-gray-400" size={48} />
+      <p className="text-gray-500">Your cart is empty</p>
+    </div>
+  ) : (
+    <>
+      <div className="space-y-4 mb-6">
+        {cart
+          .filter((item) => item?.productId) // Filter out items with null/undefined productId
+          .map((item) => (
+            <div key={item.productId._id} className="flex items-center space-x-4 p-4 border rounded-lg">
+              <img
+                src={`${item?.productId?.image}`}
+                alt={item?.productId?.name || 'Product'}
+                className="w-16 h-16 object-contain bg-gray-50 rounded"
+              />
+              <div className="flex-1">
+                <h3 className="font-medium text-gray-900">{item?.productId?.name || 'Unknown Product'}</h3>
+                <p className="text-red-500 font-bold">
+                  ₦{item?.productId?.price ? item.productId.price.toLocaleString() : '0'}
+                </p>
+                <div className="flex items-center space-x-2 mt-2">
                   <button
-                    onClick={() => {
-                      setIsCartOpen(false);
-                      setIsCheckoutOpen(true);
-                    }}
-                    className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 active:scale-95 transition-all mt-6"
+                    onClick={() =>
+                      cartDispatch({
+                        type: "UPDATE_QUANTITY",
+                        payload: { id: item.productId._id, quantity: item.quantity - 1 },
+                      })
+                    }
+                    className="p-1 bg-gray-100 rounded-full hover:bg-gray-200 active:scale-95 transition-transform"
                   >
-                    Proceed to Checkout
+                    <Minus size={16} />
                   </button>
-                </>
-              )}
+                  <span className="w-8 text-center text-black">{item.quantity}</span>
+                  <button
+                    onClick={() =>
+                      cartDispatch({
+                        type: "UPDATE_QUANTITY",
+                        payload: { id: item.productId._id, quantity: item.quantity + 1 },
+                      })
+                    }
+                    className="p-1 bg-gray-100 rounded-full hover:bg-gray-200 active:scale-95 transition-transform"
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+              <button
+                onClick={() => removeFromCart(item.productId._id)}
+                className="p-1 hover:bg-red-100 text-red-500 rounded active:scale-95 transition-transform"
+              >
+                <X size={16} />
+              </button>
             </div>
+          ))}
+      </div>
+
+      <div className="border-t pt-4 space-y-2">
+        <div className="flex justify-between text-black">
+          <span>Subtotal:</span>
+          <span>₦{cartTotal.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between text-black">
+          <span>Delivery Fee:</span>
+          <span>
+            {customerInfo.deliveryOption
+              ? customerInfo.deliveryOption === "express"
+                ? "₦1,500"
+                : cartTotal >= 5000
+                  ? "Free"
+                  : "₦500"
+              : "Select at checkout"}
+          </span>
+        </div>
+        <div className="flex justify-between font-bold text-lg border-t pt-2 text-black">
+          <span>Total:</span>
+          <span>₦{grandTotal.toLocaleString()}</span>
+        </div>
+      </div>
+
+      <button
+        onClick={() => {
+          setIsCartOpen(false);
+          setIsCheckoutOpen(true);
+        }}
+        className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 active:scale-95 transition-all mt-6"
+      >
+        Proceed to Checkout
+      </button>
+    </>
+  )}
+</div>
           </div>
         </div>
       </div>
