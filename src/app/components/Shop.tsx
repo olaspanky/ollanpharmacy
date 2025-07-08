@@ -978,9 +978,9 @@ const PharmacyApp: React.FC = () => {
                   <div className="flex-grow">
                     <h4
                       className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
-                      title={product.name}
+                      title={product?.name}
                     >
-                      {product.name}
+                      {product?.name}
                     </h4>
                     <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
                       ₦{product?.price.toLocaleString()}
@@ -995,15 +995,15 @@ const PharmacyApp: React.FC = () => {
                         ? "bg-red-500 text-white hover:bg-red-600"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
-                    aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
+                    aria-label={product?.stock > 0 ? `Add ${product?.name} to cart` : `${product?.name} is out of stock`}
                   >
-                    {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                    {product?.stock > 0 ? "Add to Cart" : "Out of Stock"}
                   </button>
                 </div>
               ))
             ) : (
               <div className="col-span-full text-center py-8">
-                <p className="text-gray-500">No products found</p>
+                <p className="text-gray-500">in a sec...</p>
               </div>
             )}
           </div>
