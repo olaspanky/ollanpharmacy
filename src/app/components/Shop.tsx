@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useReducer, useCallback } from "react";
-import { ShoppingCart, Plus, Minus, X, Search, Home } from "lucide-react";
+import { ShoppingCart, Plus, Minus, X, Search, Home, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import logo from "../../../public/ollogo.svg";
@@ -11,6 +11,7 @@ import { Product, CartItem } from "../../types";
 import { useRouter } from "next/navigation";
 import api from "@/src/lib/api";
 import CheckoutModal from "./CheckoutModal";
+
 
 // Paystack type declaration
 interface PaystackPop {
@@ -133,6 +134,82 @@ const PharmacyApp: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>(["All Category"]);
   const [isPaystackLoaded, setIsPaystackLoaded] = useState<boolean>(false);
+  const [isUnauthenticatedModalOpen, setIsUnauthenticatedModalOpen] = useState<boolean>(false);
+const UnauthenticatedModal = () => {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        setIsUnauthenticatedModalOpen(false);
+      }
+    };
+
+    if (isUnauthenticatedModalOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.body.style.overflow = "hidden";
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.body.style.overflow = "unset";
+    };
+  }, [isUnauthenticatedModalOpen]);
+
+  if (!isUnauthenticatedModalOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div ref={modalRef} className="bg-white rounded-xl max-w-md w-full p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Sign In Required</h2>
+          <button
+            onClick={() => setIsUnauthenticatedModalOpen(false)}
+            className="p-2 hover:bg-gray-100 rounded-full active:scale-95 transition-transform"
+            aria-label="Close modal"
+          >
+            <X size={20} className="text-red-500" />
+          </button>
+        </div>
+        <p className="text-gray-600 mb-6">
+          Please sign in to add items to your cart and proceed with your purchase.
+        </p>
+        <div className="flex justify-between space-x-4">
+          <button
+            onClick={() => setIsUnauthenticatedModalOpen(false)}
+            className="flex-1 bg-gray-200 text-gray-900 py-3 rounded-lg font-semibold hover:bg-gray-300 active:scale-95 transition-all"
+            aria-label="Go back"
+          >
+            Back
+          </button>
+          <button
+            onClick={() => {
+              setIsUnauthenticatedModalOpen(false);
+              router.push("/pages/signin");
+            }}
+            className="flex-1 bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 active:scale-95 transition-all"
+            aria-label="Sign in now"
+          >
+            Sign In Now
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Modify the openQuantityModal function
+const openQuantityModal = (product: Product) => {
+  if (!user) {
+    setIsUnauthenticatedModalOpen(true); // Show the modal instead of alert
+    return;
+  }
+  setSelectedProduct(product);
+  setQuantity(1);
+  setIsQuantityModalOpen(true);
+};
+
 
   // Sync customerInfo with user
   useEffect(() => {
@@ -267,16 +344,7 @@ const PharmacyApp: React.FC = () => {
   const grandTotal = cartTotal + deliveryFee;
 
   // Handle add to cart
-  const openQuantityModal = (product: Product) => {
-    if (!user) {
-      alert("Please sign in to add items to cart");
-      router.push("/pages/signin");
-      return;
-    }
-    setSelectedProduct(product);
-    setQuantity(1);
-    setIsQuantityModalOpen(true);
-  };
+
 
   const handleAddToCart = async () => {
     if (selectedProduct && quantity > 0) {
@@ -322,7 +390,7 @@ const PharmacyApp: React.FC = () => {
       const formData = new FormData();
       formData.append("prescription", customerInfo.prescription);
       try {
-        const res = await fetch("https://ollanbackend.vercel.app/api/orders/upload-prescription", {
+        const res = await fetch("https://ollanbackend-jr1d3g.fly.dev/api/orders/upload-prescription", {
           method: "POST",
           body: formData,
         });
@@ -758,300 +826,304 @@ const PharmacyApp: React.FC = () => {
             onClick={() => setOrderComplete(false)}
             className="bg-red-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-red-600 active:scale-95 transition-all"
           >
-            Continue Shopping
-          </button>
+<Link
+                        href="/pages/orders"
+                      >
+              <ShoppingBag className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
+            </Link>          </button>
         </div>
       </div>
     );
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-white via-gray-50 to-white backdrop-blur-md shadow-lg border-b border-gray-100 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <Link href="/">
-                <div className="p-2 rounded-xl mr-4 bg-gradient-to-br from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 transition-all duration-300 transform hover:scale-105 shadow-sm">
-                  <Image src={logo} alt="Ollan Logo" width={80} height={80} className="lg:w-20 w-12 filter drop-shadow-sm" />
-                </div>
-              </Link>
-              <div className="flex space-x-1 bg-gray-100 p-1 rounded-full shadow-inner">
-                <button
-                  className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
-                    viewMode === "Pharmacy" 
-                      ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30" 
-                      : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
-                  }`}
-                  onClick={() => {
-                    setViewMode("Pharmacy");
-                    setSelectedCategory("All Category");
-                  }}
-                  aria-label="Switch to Pharmacy view"
-                >
-                  <span className="flex items-center gap-2">
-                    💊 Pharmacy
-                  </span>
-                </button>
-                <button
-                  className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
-                    viewMode === "Supermarket" 
-                      ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30" 
-                      : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
-                  }`}
-                  onClick={() => {
-                    setViewMode("Supermarket");
-                    setSelectedCategory("Supermarket");
-                  }}
-                  aria-label="Switch to Supermarket view"
-                >
-                  <span className="flex items-center gap-2">
-                    🛒 Supermarket
-                  </span>
-                </button>
+ return (
+  <div className="min-h-screen bg-gray-50">
+    <header className="bg-gradient-to-r from-white via-gray-50 to-white backdrop-blur-md shadow-lg border-b border-gray-100 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Link href="/">
+              <div className="p-2 ">
+                <Image src={logo} alt="Ollan Logo" width={80} height={80} className="lg:w-20 w-12 filter drop-shadow-sm" />
               </div>
-            </div>
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl hover:from-red-600 hover:to-red-700 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/30 group"
-              aria-label="Open cart"
-            >
-              <ShoppingCart size={24} className="group-hover:animate-pulse" />
-              {cart.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-xs font-bold rounded-full h-7 w-7 flex items-center justify-center shadow-lg border-2 border-white animate-bounce">
-                  {cart.reduce((total, item) => total + item.quantity, 0)}
+            </Link>
+            <div className="flex space-x-1 bg-gray-100 p-1 rounded-full shadow-inner">
+              <button
+                className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  viewMode === "Pharmacy" 
+                    ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30" 
+                    : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
+                }`}
+                onClick={() => {
+                  setViewMode("Pharmacy");
+                  setSelectedCategory("All Category");
+                }}
+                aria-label="Switch to Pharmacy view"
+              >
+                <span className="flex items-center gap-2">
+                  💊 Pharmacy
                 </span>
-              )}
-              <div className="absolute inset-0 bg-white rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-            </button>
-          </div>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-200 to-transparent"></div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="lg:text-3xl text-xl font-bold text-gray-900 mb-8 text-center md:text-left">
-          {viewMode === "Pharmacy"
-            ? "Shop trusted medications, wellness products, and groceries"
-            : "Explore our supermarket products"}
-        </h2>
-
-        <div className="mb-8">
-          <div className="relative max-w-md mx-auto md:mx-0">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearchInputChange(e.target.value)}
-              placeholder={viewMode === "Pharmacy" ? "Search medications..." : "Search supermarket products..."}
-              className="w-full p-1 lg:p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-black"
-              aria-label="Search products"
-            />
-            <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          </div>
-        </div>
-
-        {viewMode === "Pharmacy" && (
-          <div className="mb-8">
-            <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 md:flex-wrap md:justify-start md:overflow-visible">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  className={`px-4 py-2 rounded-full text-[12px] lg:text-sm font-medium transition-all duration-200 active:scale-95 whitespace-nowrap flex-shrink-0 ${
-                    selectedCategory === category
-                      ? "bg-red-500 text-white shadow-md"
-                      : "bg-white text-black hover:bg-gray-100 shadow-sm"
-                  }`}
-                  onClick={() => setSelectedCategory(category)}
-                  aria-label={`Filter by ${category}`}
-                >
-                  {category}
-                </button>
-              ))}
+              </button>
+              <button
+                className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  viewMode === "Supermarket" 
+                    ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30" 
+                    : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
+                }`}
+                onClick={() => {
+                  setViewMode("Supermarket");
+                  setSelectedCategory("Supermarket");
+                }}
+                aria-label="Switch to Supermarket view"
+              >
+                <span className="flex items-center gap-2">
+                  🛒 Supermarket
+                </span>
+              </button>
             </div>
           </div>
-        )}
-
-        {viewMode === "Pharmacy" && popularProducts.length > 0 && (
-          <div className="mb-12">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Popular Medications</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
-              {popularProducts.map((product) => (
-                <div
-                  key={product._id}
-                  className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
-                >
-                  <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
-                    <img
-                      src={`${product.image}`}
-                      alt={product.name}
-                      className="h-40 object-contain max-w-full"
-                      loading="lazy"
-                    />
-                    {product.stock === 0 && (
-                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-semibold">Out of Stock</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-grow">
-                    <h4
-                      className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
-                      title={product.name}
-                    >
-                      {product.name}
-                    </h4>
-                    <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
-                      ₦{product?.price.toLocaleString()}
-                    </p>
-                    {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
-                  </div>
-                  <button
-                    onClick={() => openQuantityModal(product)}
-                    disabled={product.stock === 0}
-                    className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
-                      product.stock > 0
-                        ? "bg-red-500 text-white hover:bg-red-600"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                    aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
-                  >
-                    {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {viewMode === "Pharmacy" && otcProducts.length > 0 && (
-          <div className="mb-12">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Over-the-Counter (OTC)</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
-              {otcProducts.map((product) => (
-                <div
-                  key={product._id}
-                  className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
-                >
-                  <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
-                    <img
-                      src={`${product.image}`}
-                      alt={product.name}
-                      className="h-40 object-contain max-w-full"
-                      loading="lazy"
-                    />
-                    {product.stock === 0 && (
-                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-semibold">Out of Stock</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-grow">
-                    <h4
-                      className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
-                      title={product.name}
-                    >
-                      {product.name}
-                    </h4>
-                    <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
-                      ₦{product?.price.toLocaleString()}
-                    </p>
-                    {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
-                  </div>
-                  <button
-                    onClick={() => openQuantityModal(product)}
-                    disabled={product.stock === 0}
-                    className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
-                      product.stock > 0
-                        ? "bg-red-500 text-white hover:bg-red-600"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                    aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
-                  >
-                    {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div className="mb-12">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            {viewMode === "Pharmacy" ? "All Medications" : "Supermarket Products"}
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
-            {allProducts.length > 0 ? (
-              allProducts.map((product) => (
-                <div
-                  key={product._id}
-                  className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
-                >
-                  <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
-                    <img
-                      src={`${product.image}`}
-                      alt={product.name}
-                      className="h-40 object-contain max-w-full"
-                      loading="lazy"
-                    />
-                    {product.stock === 0 && (
-                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-semibold">Out of Stock</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-grow">
-                    <h4
-                      className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
-                      title={product?.name}
-                    >
-                      {product?.name}
-                    </h4>
-                    <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
-                      ₦{product?.price.toLocaleString()}
-                    </p>
-                    {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
-                  </div>
-                  <button
-                    onClick={() => openQuantityModal(product)}
-                    disabled={product.stock === 0}
-                    className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
-                      product.stock > 0
-                        ? "bg-red-500 text-white hover:bg-red-600"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                    aria-label={product?.stock > 0 ? `Add ${product?.name} to cart` : `${product?.name} is out of stock`}
-                  >
-                    {product?.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full text-center py-8">
-                <p className="text-gray-500">in a sec...</p>
-              </div>
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="relative p-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl hover:from-red-600 hover:to-red-700 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/30 group"
+            aria-label="Open cart"
+          >
+            <ShoppingCart size={24} className="group-hover:animate-pulse" />
+            {cart.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-xs font-bold rounded-full h-7 w-7 flex items-center justify-center shadow-lg border-2 border-white animate-bounce">
+                {cart.reduce((total, item) => total + item.quantity, 0)}
+              </span>
             )}
+            <div className="absolute inset-0 bg-white rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+          </button>
+        </div>
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-200 to-transparent"></div>
+    </header>
+
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h2 className="lg:text-3xl text-xl font-bold text-gray-900 mb-8 text-center md:text-left">
+        {viewMode === "Pharmacy"
+          ? "Shop trusted medications, wellness products, and groceries"
+          : "Explore our supermarket products"}
+      </h2>
+
+      <div className="mb-8">
+        <div className="relative max-w-md mx-auto md:mx-0">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearchInputChange(e.target.value)}
+            placeholder={viewMode === "Pharmacy" ? "Search medications..." : "Search supermarket products..."}
+            className="w-full p-1 lg:p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-black"
+            aria-label="Search products"
+          />
+          <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        </div>
+      </div>
+
+      {viewMode === "Pharmacy" && (
+        <div className="mb-8">
+          <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 md:flex-wrap md:justify-start md:overflow-visible">
+            {categories.map((category) => (
+              <button
+                key={category}
+                className={`px-4 py-2 rounded-full text-[12px] lg:text-sm font-medium transition-all duration-200 active:scale-95 whitespace-nowrap flex-shrink-0 ${
+                  selectedCategory === category
+                    ? "bg-red-500 text-white shadow-md"
+                    : "bg-white text-black hover:bg-gray-100 shadow-sm"
+                }`}
+                onClick={() => setSelectedCategory(category)}
+                aria-label={`Filter by ${category}`}
+              >
+                {category}
+              </button>
+            ))}
           </div>
         </div>
-      </main>
+      )}
 
-      <QuantityModal />
-      <CartModal />
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        setIsOpen={setIsCheckoutOpen}
-        customerInfo={customerInfo}
-        setCustomerInfo={setCustomerInfo}
-        cartTotal={cartTotal}
-        deliveryFee={deliveryFee}
-        grandTotal={grandTotal}
-        estimatedDelivery={estimatedDelivery}
-        isProcessing={isProcessing}
-        isPaystackLoaded={isPaystackLoaded}
-        initializePayment={initializePayment}
-      />
-      <OrderCompleteModal />
-    </div>
-  );
+      {viewMode === "Pharmacy" && popularProducts.length > 0 && (
+        <div className="mb-12">
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Popular Medications</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-2 lg:gap-6">
+            {popularProducts.map((product) => (
+              <div
+                key={product._id}
+                className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+              >
+                <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
+                  <img
+                    src={`${product.image}`}
+                    alt={product.name}
+                    className="h-40 object-contain max-w-full"
+                    loading="lazy"
+                  />
+                  {product.stock === 0 && (
+                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold">Out of Stock</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-grow">
+                  <h4
+                    className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
+                    title={product.name}
+                  >
+                    {product.name}
+                  </h4>
+                  <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
+                    ₦{product?.price.toLocaleString()}
+                  </p>
+                  {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
+                </div>
+                <button
+                  onClick={() => openQuantityModal(product)}
+                  disabled={product.stock === 0}
+                  className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
+                    product.stock > 0
+                      ? "bg-red-500 text-white hover:bg-red-600"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                  aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
+                >
+                  {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {viewMode === "Pharmacy" && otcProducts.length > 0 && (
+        <div className="mb-12">
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Over-the-Counter (OTC)</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-2 lg:gap-6">
+            {otcProducts.map((product) => (
+              <div
+                key={product._id}
+                className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+              >
+                <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
+                  <img
+                    src={`${product.image}`}
+                    alt={product.name}
+                    className="h-40 object-contain max-w-full"
+                    loading="lazy"
+                  />
+                  {product.stock === 0 && (
+                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold">Out of Stock</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-grow">
+                  <h4
+                    className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
+                    title={product.name}
+                  >
+                    {product.name}
+                  </h4>
+                  <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
+                    ₦{product?.price.toLocaleString()}
+                  </p>
+                  {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
+                </div>
+                <button
+                  onClick={() => openQuantityModal(product)}
+                  disabled={product.stock === 0}
+                  className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
+                    product.stock > 0
+                      ? "bg-red-500 text-white hover:bg-red-600"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                  aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
+                >
+                  {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mb-12">
+        <h3 className="text-2xl font-bold text-gray-900 mb-4">
+          {viewMode === "Pharmacy" ? "All Medications" : "Supermarket Products"}
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-2 lg:gap-6">
+          {allProducts.length > 0 ? (
+            allProducts.map((product) => (
+              <div
+                key={product._id}
+                className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+              >
+                <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
+                  <img
+                    src={`${product.image}`}
+                    alt={product.name}
+                    className="h-40 object-contain max-w-full"
+                    loading="lazy"
+                  />
+                  {product.stock === 0 && (
+                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold">Out of Stock</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-grow">
+                  <h4
+                    className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
+                    title={product?.name}
+                  >
+                    {product?.name}
+                  </h4>
+                  <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
+                    ₦{product?.price.toLocaleString()}
+                  </p>
+                  {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
+                </div>
+                <button
+                  onClick={() => openQuantityModal(product)}
+                  disabled={product.stock === 0}
+                  className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
+                    product.stock > 0
+                      ? "bg-red-500 text-white hover:bg-red-600"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                  aria-label={product?.stock > 0 ? `Add ${product?.name} to cart` : `${product?.name} is out of stock`}
+                >
+                  {product?.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8">
+              <p className="text-gray-500">in a sec...</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+
+    <QuantityModal />
+    <CartModal />
+    <CheckoutModal
+      isOpen={isCheckoutOpen}
+      setIsOpen={setIsCheckoutOpen}
+      customerInfo={customerInfo}
+      setCustomerInfo={setCustomerInfo}
+      cartTotal={cartTotal}
+      deliveryFee={deliveryFee}
+      grandTotal={grandTotal}
+      estimatedDelivery={estimatedDelivery}
+      isProcessing={isProcessing}
+      isPaystackLoaded={isPaystackLoaded}
+      initializePayment={initializePayment}
+    />
+    <OrderCompleteModal />
+    <UnauthenticatedModal /> {/* Add the UnauthenticatedModal here */}
+  </div>
+);
 };
 
 export default PharmacyApp;

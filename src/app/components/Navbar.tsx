@@ -110,7 +110,7 @@ const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({ links 
           </div>
 
           {/* Search Bar */}
-          <div className="hidden md:flex items-center flex-1 max-w-2xl mx-8">
+          {/* <div className="hidden md:flex items-center flex-1 max-w-2xl mx-8">
             <form onSubmit={handleSearch} className="w-full">
               <div className="flex items-center bg-gray-50 rounded-full px-4 py-2 border border-gray-200 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 transition-all">
                 <select
@@ -141,22 +141,31 @@ const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({ links 
                 </button>
               </div>
             </form>
-          </div>
+          </div> */}
 
           {/* Right Icons */}
           <div className="hidden md:flex items-center space-x-4">
-            <button
+            {/* <button
               className="p-2 rounded-full hover:bg-gray-100 transition-colors"
               aria-label="Wishlist"
             >
               <Heart className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
-            </button>
+            </button> */}
+            {user ? (
             <button
               className="p-2 rounded-full hover:bg-gray-100 transition-colors"
               aria-label="Shopping cart"
             >
+              <Link
+                        href="/pages/orders"
+                      >
               <ShoppingBag className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
+            </Link>
             </button>
+            ) : (
+              <>
+              </>
+            )}
 
             {/* User Dropdown */}
             <div className="relative group">

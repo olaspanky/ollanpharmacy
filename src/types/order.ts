@@ -1,0 +1,75 @@
+export interface Product {
+  _id: string;
+  name: string;
+  price: number;
+}
+
+export interface OrderItem {
+  productId: Product;
+  quantity: number;
+  price: number;
+}
+
+export interface CustomerInfo {
+  name: string;
+  email: string;
+  phone: string;
+  deliveryOption: string;
+  pickupLocation: string;
+  estimatedDelivery: string;
+}
+
+
+export interface Order {
+  _id: string;
+  //   status: 'pending' | 'processing' | 'accepted' | 'rejected' | 'assigned' | 'en_route' | 'delivered';
+  // deliveryStatus?: 'assigned' | 'en_route' | 'delivered';
+  customerInfo: {
+    name: string;
+    email: string;
+    phone: string;
+    pickupLocation: string;
+    deliveryOption?: string;
+  deliveryAddress?: string;
+  deliveryInstructions?: string;
+  estimatedDelivery?: string;
+  };
+  items: {
+    productId: { _id: string; name: string };
+    quantity: number;
+    price: number;
+  }[];
+  totalAmount: number;
+  prescriptionUrl?: string;
+  createdAt: string;
+  updatedAt: string;
+  paymentReference?: string;
+  deliveryFee?: number;
+  user?: {
+    name: string;
+    email: string;
+  };
+  seller?: {
+    name: string;
+    email: string;
+  };
+  rider?: {
+    name: string;
+    email: string;
+  };
+  estimatedDelivery?: string;
+  deliveryOption?: string;
+  deliveryAddress?: string;
+  deliveryInstructions?: string;
+  customerName?: string;
+  riderId?: string;
+  riderName?: string;
+  status: string; // e.g., 'pending', 'processing', 'accepted', 'rejected', 'cancelled'
+  deliveryStatus: string; // e.g., 'pending', 'en_route', 'delivered'
+}
+
+export interface Rider {
+  _id: string;
+  name: string;
+}
+

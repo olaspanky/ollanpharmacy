@@ -1,9 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export', // Enable static site generation
   async rewrites() {
     return [
       {
-        source: '/uploads/:path*',
+        source: '/Uploads/:path*',
         destination: 'https://ollanbackend.vercel.app/uploads/:path*',
       },
     ];
@@ -16,6 +17,8 @@ const nextConfig = {
         pathname: '/uploads/**',
       },
     ],
+        unoptimized: true
+
   },
 };
 

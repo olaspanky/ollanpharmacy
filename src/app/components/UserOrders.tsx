@@ -42,10 +42,14 @@ interface Order {
   prescriptionUrl?: string;
   totalAmount: number;
   paymentReference: string;
-  status: string;
+  status: string; // e.g., 'pending', 'processing', 'accepted', 'rejected', 'cancelled'
+  deliveryStatus: string; // e.g., 'pending', 'en_route', 'delivered'
+  rider?: {
+    _id: string;
+    name: string;
+  };
   createdAt: string;
 }
-
 const UserOrders: React.FC = () => {
   const { user } = useAuth();
   const router = useRouter();
@@ -55,25 +59,30 @@ const UserOrders: React.FC = () => {
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    if (!user) {
-      router.push("/pages/signin");
-      return;
+  if (!user) {
+    router.push("/pages/signin");
+    return;
+  }
+
+  const fetchOrders = async () => {
+    try {
+      const { data } = await api.get("/api/orders/my-orders");
+      // Sort orders by createdAt in descending order (newest first)
+      const sortedOrders = data.sort((a: Order, b: Order) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      );
+      setOrders(sortedOrders);
+      setLoading(false);
+    } catch (err: any) {
+      setError(err.message || "Failed to fetch orders");
+      setLoading(false);
     }
+  };
 
-    const fetchOrders = async () => {
-      try {
-        const { data } = await api.get("/api/orders/my-orders");
-        setOrders(data);
-        setLoading(false);
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch orders");
-        setLoading(false);
-      }
-    };
-
-    fetchOrders();
-  }, [user, router]);
-
+  fetchOrders();
+  const refreshInterval = setInterval(fetchOrders, 60000); // Poll every 60 seconds
+  return () => clearInterval(refreshInterval); // Cleanup on unmount
+}, [user, router]);
   const toggleOrderExpansion = (orderId: string) => {
     setExpandedOrders(prev => {
       const newSet = new Set(prev);
@@ -86,33 +95,43 @@ const UserOrders: React.FC = () => {
     });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'processing':
-        return 'bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 border-yellow-200';
-      case 'delivered':
-        return 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200';
-      case 'shipped':
-        return 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border-blue-200';
-      case 'cancelled':
-        return 'bg-gradient-to-r from-red-100 to-pink-100 text-red-800 border-red-200';
-      default:
-        return 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 border-gray-200';
-    }
-  };
+  const getStatusColor = (status: string, deliveryStatus: string) => {
+  if (deliveryStatus === 'delivered') {
+    return 'bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 border-green-200';
+  } else if (deliveryStatus === 'en_route') {
+    return 'bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 border-blue-200';
+  }
+  switch (status.toLowerCase()) {
+    case 'processing':
+      return 'bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 border-yellow-200';
+    case 'accepted':
+      return 'bg-gradient-to-r from-teal-100 to-green-100 text-teal-800 border-teal-200';
+    case 'rejected':
+    case 'cancelled':
+      return 'bg-gradient-to-r from-red-100 to-pink-100 text-red-800 border-red-200';
+    default:
+      return 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 border-gray-200';
+  }
+};
 
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'processing':
-        return <Clock size={14} className="mr-1" />;
-      case 'delivered':
-        return <CheckCircle size={14} className="mr-1" />;
-      case 'shipped':
-        return <Truck size={14} className="mr-1" />;
-      default:
-        return <Package size={14} className="mr-1" />;
-    }
-  };
+const getStatusIcon = (status: string, deliveryStatus: string) => {
+  if (deliveryStatus === 'delivered') {
+    return <CheckCircle size={14} className="mr-1" />;
+  } else if (deliveryStatus === 'en_route') {
+    return <Truck size={14} className="mr-1" />;
+  }
+  switch (status.toLowerCase()) {
+    case 'processing':
+      return <Clock size={14} className="mr-1" />;
+    case 'accepted':
+      return <Package size={14} className="mr-1" />;
+    case 'rejected':
+    case 'cancelled':
+      return <Package size={14} className="mr-1" />;
+    default:
+      return <Package size={14} className="mr-1" />;
+  }
+};
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -197,11 +216,18 @@ const UserOrders: React.FC = () => {
                           Order #{order._id.slice(-6)}
                         </h2>
                         <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getStatusColor(order.status)}`}
-                        >
-                          {getStatusIcon(order.status)}
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                        </span>
+  className={`inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium border ${getStatusColor(
+    order.status,
+    order.deliveryStatus
+  )}`}
+>
+  {getStatusIcon(order.status, order.deliveryStatus)}
+  {order.deliveryStatus === 'delivered'
+    ? 'Delivered'
+    : order.deliveryStatus === 'en_route'
+    ? 'En Route'
+    : order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+</span>
                       </div>
                       <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6 gap-1 text-sm text-gray-600">
                         <div className="flex items-center gap-1">
