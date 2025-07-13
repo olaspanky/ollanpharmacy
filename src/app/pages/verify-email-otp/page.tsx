@@ -25,40 +25,40 @@ const VerifyEmailOTP = () => {
     }
   }, [searchParams]);
 
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setErrors({ otp: "" });
-    setStatus("loading");
+const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  setErrors({ otp: "" });
+  setStatus("loading");
 
-    if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
-      setErrors({ otp: "Please enter a valid 6-digit code" });
-      setStatus("idle");
-      return;
-    }
+  if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+    setErrors({ otp: "Please enter a valid 6-digit code" });
+    setStatus("idle");
+    return;
+  }
 
-    try {
-      const res = await fetch("https://ollanbackend-jr1d3g.fly.dev/api/auth/verify-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, otp }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || "Verification failed");
-      }
-      setStatus("success");
-      setMessage("Email verified successfully! You can now sign in.");
-      if (data.token && data.user) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        setUser(data.user);
-        setTimeout(() => router.push("/pages/shop"), 2000);
-      }
-    } catch (error) {
-      setStatus("error");
-        setMessage(String(error) || "Verification failed. Please try again.");
+  try {
+    const res = await fetch("https://ollanbackend-jr1d3g.fly.dev/api/auth/verify-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, otp }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || "Verification failed");
     }
-  };
+    setStatus("success");
+    setMessage("Email verified successfully! You can now sign in.");
+    if (data.token && data.user) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
+      setUser(data.user);
+      setTimeout(() => router.push("/pages/shop"), 2000);
+    }
+  } catch (error) {
+    setStatus("error");
+    setMessage(String(error) || "Verification failed. Please try again.");
+  }
+};
 
   const handleResend = async () => {
     try {
