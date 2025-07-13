@@ -168,17 +168,26 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
           }
         }
       }
-    } catch (error) {
-      console.error("Auth error:", { message: error.message });
-      const errorMessage = error.message || "Something went wrong. Please try again.";
-      showNotification("error", errorMessage);
-      if (error.message !== "Please verify your email before signing in.") {
-        setErrors({ email: errorMessage });
-      }
-    } finally {
-      setIsLoading(false);
-      setIsSubmitting(false);
+    }catch (error) {
+  // Type guard to ensure error is an Error object
+  if (error instanceof Error) {
+    console.error("Auth error:", { message: error.message });
+    const errorMessage = error.message || "Something went wrong. Please try again.";
+    showNotification("error", errorMessage);
+    if (error.message !== "Please verify your email before signing in.") {
+      setErrors({ email: errorMessage });
     }
+  } else {
+    // Fallback for non-Error objects (e.g., string or other thrown types)
+    console.error("Auth error:", { message: String(error) });
+    const errorMessage = String(error) || "Something went wrong. Please try again.";
+    showNotification("error", errorMessage);
+    setErrors({ email: errorMessage });
+  }
+} finally {
+  setIsLoading(false);
+  setIsSubmitting(false);
+}
   };
 
   const getPasswordStrength = (password: string): { strength: number; label: string; color: string } => {

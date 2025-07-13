@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, FormEvent } from "react";
 import { CheckCircle, AlertCircle, Lock } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext"; // Adjust path if needed
 
@@ -25,7 +25,7 @@ const VerifyEmailOTP = () => {
     }
   }, [searchParams]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrors({ otp: "" });
     setStatus("loading");
@@ -56,7 +56,7 @@ const VerifyEmailOTP = () => {
       }
     } catch (error) {
       setStatus("error");
-      setMessage(error.message || "Verification failed. Please try again.");
+        setMessage(String(error) || "Verification failed. Please try again.");
     }
   };
 
@@ -75,7 +75,7 @@ const VerifyEmailOTP = () => {
       setMessage("Verification code resent! Please check your inbox.");
     } catch (error) {
       setStatus("error");
-      setMessage(error.message || "Failed to resend verification code");
+        setMessage(String(error) || "Failed to resend verification code");
     }
   };
 
