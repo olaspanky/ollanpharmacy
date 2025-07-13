@@ -110,7 +110,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
     return newErrors;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+ const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
     setIsSubmitting(true);
@@ -124,61 +124,57 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
 
     setIsLoading(true);
 
-try {
-  if (type === "signup") {
-    const res = await fetch("https://ollanbackend.vercel.app/api/auth/signup", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: formData.name,
-        email: formData.email,
-        password: formData.password,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.message || "Signup failed");
-    }
-    console.log("Signup response:", JSON.stringify(data, null, 2));
-    if (data.token && data.user) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user)); // Store user object
-      console.log("Token saved to localStorage:", data.token);
-      console.log("User saved to localStorage:", data.user);
-      setUser(data.user);
-      showNotification("success", "Account created successfully!");
-      setTimeout(() => router.push("/pages/shop"), 1000);
-    }
-  } else if (type === "signin") {
-    const res = await fetch("https://ollanbackend.vercel.app/api/auth/signin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        email: formData.email,
-        password: formData.password,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.message || "Signin failed");
-    }
-    console.log("Signin response:", JSON.stringify(data, null, 2));
-    if (data.token && data.user) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user)); // Store user object
-      console.log("Token saved to localStorage:", data.token);
-      console.log("User saved to localStorage:", data.user);
-      setUser(data.user);
-      showNotification("success", "Welcome back!");
-      setTimeout(() => router.push("/pages/shop"), 1000);
-    }
-  }
-} catch (error: any) {
-      console.error("Auth error:", {
-        message: error.message,
-      });
+    try {
+      if (type === "signup") {
+        const res = await fetch("https://ollanbackend-jr1d3g.fly.dev/api/auth/signup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: formData.name,
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.message || "Signup failed");
+        }
+        showNotification("success", "Signup successful! Please check your email for the verification code.");
+        setTimeout(() => router.push(`/pages/verify-email-otp?email=${encodeURIComponent(formData.email)}`), 2000);
+      } else if (type === "signin") {
+        const res = await fetch("https://ollanbackend-jr1d3g.fly.dev/api/auth/signin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: formData.email,
+            password: formData.password,
+          }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          if (data.message === "Please verify your email before signing in.") {
+            setErrors({ email: data.message });
+          } else {
+            throw new Error(data.message || "Signin failed");
+          }
+        } else {
+          console.log("Signin response:", JSON.stringify(data, null, 2));
+          if (data.token && data.user) {
+            localStorage.setItem("token", data.token);
+            localStorage.setItem("user", JSON.stringify(data.user));
+            setUser(data.user);
+            showNotification("success", "Welcome back!");
+            setTimeout(() => router.push("/pages/shop"), 1000);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Auth error:", { message: error.message });
       const errorMessage = error.message || "Something went wrong. Please try again.";
       showNotification("error", errorMessage);
+      if (error.message !== "Please verify your email before signing in.") {
+        setErrors({ email: errorMessage });
+      }
     } finally {
       setIsLoading(false);
       setIsSubmitting(false);
@@ -213,7 +209,7 @@ try {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br text-black from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Notification */}
         {notification.type && (
@@ -350,6 +346,32 @@ try {
                 )}
               </div>
             )}
+
+            {type === "signin" && errors.email === "Please verify your email before signing in." && (
+  <div className="text-center mt-4">
+    <button
+      onClick={async () => {
+        try {
+          const res = await fetch("https://ollanbackend-jr1d3g.fly.dev/api/auth/resend-verification", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: formData.email }),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.message || "Failed to resend verification email");
+          }
+          showNotification("success", "Verification email resent! Please check your inbox.");
+        } catch (error: any) {
+          showNotification("error", error.message || "Failed to resend verification email");
+        }
+      }}
+      className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+    >
+      Resend Verification Email
+    </button>
+  </div>
+)}
 
             {/* Confirm Password Field */}
             {(type === "signup" || type === "reset-password") && (

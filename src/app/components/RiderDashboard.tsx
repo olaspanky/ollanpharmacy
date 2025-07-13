@@ -1,30 +1,45 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { fetchRiderOrders, updateDeliveryStatus } from '../../lib/api2';
-import { Order } from '../../types/order';
-import OrderCard from './OrderCard';
-import OrderModal from './OrderModal';
-import { Bell, Search, Filter, LogOut, Package, Truck, Check, Clock } from 'lucide-react';
+import { useState, useEffect } from "react";
+import { fetchRiderOrders, updateDeliveryStatus } from "../../lib/api2";
+import { Order } from "../../types/order";
+import OrderCard from "./OrderCard";
+import OrderModal from "./OrderModal";
+import {
+  Bell,
+  Search,
+  Filter,
+  LogOut,
+  Package,
+  Truck,
+  Check,
+  Clock,
+} from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import { useRouter } from "next/navigation";
+import Navbar from './Navbar2';
+
 
 export default function RiderDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+  const router = useRouter();
+  const { user, logout } = useAuth();
 
   useEffect(() => {
     const loadOrders = async () => {
       try {
-        console.log('Fetching rider orders...');
+        console.log("Fetching rider orders...");
         const data = await fetchRiderOrders();
-        console.log('Orders received:', data);
+        console.log("Orders received:", data);
         setOrders(data);
       } catch (err) {
-        console.error('Error in loadOrders:', err);
-        setError('Failed to load orders');
+        console.error("Error in loadOrders:", err);
+        setError("Failed to load orders");
       } finally {
         setLoading(false);
       }
@@ -32,55 +47,72 @@ export default function RiderDashboard() {
     loadOrders();
   }, []);
 
-const handleAction = async (
-  orderId: string,
-  action: 'accept' | 'reject' | 'en_route' | 'delivered' | 'assign-rider',
-  riderId?: string
-) => {
-  try {
-    console.log(`Handling action ${action} for order ${orderId}`);
-    if (action === 'en_route' || action === 'delivered') {
-      const updatedOrder = await updateDeliveryStatus(orderId, action);
-      setOrders(
-        orders.map((order) =>
-          order._id === orderId ? { ...order, deliveryStatus: action } : order
-        )
-      );
-    } else if (action === 'accept' || action === 'reject') {
-      // Handle accept/reject logic (e.g., call a different API or update state)
-      console.log(`Action ${action} for order ${orderId}`);
-      // Example: Update state or call another function
-    } else if (action === 'assign-rider') {
-      // Handle assign-rider logic
-      if (riderId) {
-        console.log(`Assigning rider ${riderId} to order ${orderId}`);
-        // Example: Call assignRider API or update state
-      } else {
-        throw new Error('Rider ID required for assign-rider action');
+  const handleAction = async (
+    orderId: string,
+    action: "accept" | "reject" | "en_route" | "delivered" | "assign-rider",
+    riderId?: string
+  ) => {
+    try {
+      console.log(`Handling action ${action} for order ${orderId}`);
+      if (action === "en_route" || action === "delivered") {
+        const updatedOrder = await updateDeliveryStatus(orderId, action);
+        setOrders(
+          orders.map((order) =>
+            order._id === orderId ? { ...order, deliveryStatus: action } : order
+          )
+        );
+      } else if (action === "accept" || action === "reject") {
+        // Handle accept/reject logic (e.g., call a different API or update state)
+        console.log(`Action ${action} for order ${orderId}`);
+        // Example: Update state or call another function
+      } else if (action === "assign-rider") {
+        // Handle assign-rider logic
+        if (riderId) {
+          console.log(`Assigning rider ${riderId} to order ${orderId}`);
+          // Example: Call assignRider API or update state
+        } else {
+          throw new Error("Rider ID required for assign-rider action");
+        }
       }
+    } catch (err) {
+      console.error(
+        `Error handling action ${action} for order ${orderId}:`,
+        err
+      );
+      setError(`Failed to process action ${action}`);
     }
-  } catch (err) {
-    console.error(`Error handling action ${action} for order ${orderId}:`, err);
-    setError(`Failed to process action ${action}`);
-  }
-};
+  };
 
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerInfo?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+      order.customerInfo?.name
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase());
     const matchesFilter =
-      filterStatus === 'all' ||
+      filterStatus === "all" ||
       order.deliveryStatus === filterStatus ||
-      (!order.deliveryStatus && filterStatus === 'assigned');
+      (!order.deliveryStatus && filterStatus === "assigned");
     return matchesSearch && matchesFilter;
   });
 
   const stats = {
     total: orders.length,
-    assigned: orders.filter((o) => !o.deliveryStatus || o.deliveryStatus === 'assigned').length,
-    enRoute: orders.filter((o) => o.deliveryStatus === 'en_route').length,
-    delivered: orders.filter((o) => o.deliveryStatus === 'delivered').length,
+    assigned: orders.filter(
+      (o) => !o.deliveryStatus || o.deliveryStatus === "assigned"
+    ).length,
+    enRoute: orders.filter((o) => o.deliveryStatus === "en_route").length,
+    delivered: orders.filter((o) => o.deliveryStatus === "delivered").length,
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+
+      router.push("/pages/signin");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   if (loading) {
@@ -97,33 +129,8 @@ const handleAction = async (
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                <Truck className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                  Rider Dashboard
-                </h1>
-                <p className="text-slate-500 text-sm">Manage your deliveries efficiently</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="relative p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-              </button>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors">
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+         <Navbar />
+    
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Stats Cards */}
@@ -131,8 +138,12 @@ const handleAction = async (
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-slate-500 text-sm font-medium">Total Assigned</p>
-                <p className="text-3xl font-bold text-slate-800">{stats.total}</p>
+                <p className="text-slate-500 text-sm font-medium">
+                  Total Assigned
+                </p>
+                <p className="text-3xl font-bold text-slate-800">
+                  {stats.total}
+                </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
                 <Package className="w-6 h-6 text-white" />
@@ -143,7 +154,9 @@ const handleAction = async (
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-500 text-sm font-medium">Assigned</p>
-                <p className="text-3xl font-bold text-amber-600">{stats.assigned}</p>
+                <p className="text-3xl font-bold text-amber-600">
+                  {stats.assigned}
+                </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center">
                 <Clock className="w-6 h-6 text-white" />
@@ -154,7 +167,9 @@ const handleAction = async (
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-500 text-sm font-medium">En Route</p>
-                <p className="text-3xl font-bold text-blue-600">{stats.enRoute}</p>
+                <p className="text-3xl font-bold text-blue-600">
+                  {stats.enRoute}
+                </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
                 <Truck className="w-6 h-6 text-white" />
@@ -165,7 +180,9 @@ const handleAction = async (
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-500 text-sm font-medium">Delivered</p>
-                <p className="text-3xl font-bold text-emerald-600">{stats.delivered}</p>
+                <p className="text-3xl font-bold text-emerald-600">
+                  {stats.delivered}
+                </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl flex items-center justify-center">
                 <Check className="w-6 h-6 text-white" />
@@ -216,7 +233,10 @@ const handleAction = async (
         {/* Orders Grid */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredOrders.map((order) => (
-            <div key={order._id} className="transform hover:scale-105 transition-all duration-300">
+            <div
+              key={order._id}
+              className="transform hover:scale-105 transition-all duration-300"
+            >
               <OrderCard
                 order={order}
                 onView={() => setSelectedOrder(order)}
@@ -233,11 +253,13 @@ const handleAction = async (
             <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Package className="w-12 h-12 text-slate-400" />
             </div>
-            <h3 className="text-xl font-semibold text-slate-600 mb-2">No orders found</h3>
+            <h3 className="text-xl font-semibold text-slate-600 mb-2">
+              No orders found
+            </h3>
             <p className="text-slate-500">
-              {searchTerm || filterStatus !== 'all'
-                ? 'Try adjusting your search or filter criteria'
-                : 'No orders assigned to you yet'}
+              {searchTerm || filterStatus !== "all"
+                ? "Try adjusting your search or filter criteria"
+                : "No orders assigned to you yet"}
             </p>
           </div>
         )}

@@ -9,7 +9,7 @@ export default function ClientLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const showNavbar = pathname !== "/pages/shop";
+  const showNavbar = pathname !== "/pages/shop" && !pathname.startsWith("/admin");
 
   return (
     <>

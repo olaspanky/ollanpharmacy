@@ -1,28 +1,36 @@
-// src/components/ProductManagement.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import {
   Box,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableSortLabel,
+  Checkbox,
+  TextField,
+  Button,
+  Paper,
   AppBar,
   Toolbar,
   Typography,
-  Badge,
-  IconButton,
   CircularProgress,
   SpeedDial,
   SpeedDialAction,
   SpeedDialIcon,
 } from "@mui/material";
-import { Add, Close, SelectAll } from "@mui/icons-material";
+import { Add, SelectAll } from "@mui/icons-material";
 import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ProductCard from "./ProductCard";
 import CreateProductForm from "./CreateProductForm";
 import SearchAndFilters from "./SearchAndFilters";
 import SelectionModeHeader from "./SelectionModeHeader";
 import DeleteConfirmationDialog from "./DeleteConfirmationDialog";
+import Navbar from "./Navbar2";
 
 // Define TypeScript interfaces
 interface Product {
@@ -50,6 +58,9 @@ interface NewProduct {
   image: File | null;
 }
 
+// Sorting direction
+type Order = "asc" | "desc";
+
 const ProductManagement: React.FC = () => {
   // State management
   const [products, setProducts] = useState<Product[]>([]);
@@ -69,10 +80,11 @@ const ProductManagement: React.FC = () => {
   const [isCreating, setIsCreating] = useState<boolean>(false);
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [filterCategory, setFilterCategory] = useState<string>("all");
-  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [editingProduct, setEditingProduct] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState<boolean>(false);
   const [selectionMode, setSelectionMode] = useState<boolean>(false);
+  const [order, setOrder] = useState<Order>("asc");
+  const [orderBy, setOrderBy] = useState<keyof Product>("name");
 
   // Base URL for backend
   const API_URL = "https://ollanbackend.vercel.app/api/products";
@@ -91,30 +103,6 @@ const ProductManagement: React.FC = () => {
         setLoading(false);
         return;
       }
-      // Mock data for testing (uncomment to use)
-      /*
-      const mockProducts = [
-        {
-          _id: "1",
-          name: "Paracetamol",
-          description: "Pain reliever",
-          price: 500,
-          stock: 100,
-          category: "Pain reliever",
-          image: "/images/paracetamol.jpg",
-        },
-        {
-          _id: "2",
-          name: "Vitamin C",
-          description: "Immune booster",
-          price: 1000,
-          stock: 50,
-          category: "Vitamins and Supplements",
-          image: "/images/vitamin-c.jpg",
-        },
-      ];
-      setProducts(mockProducts);
-      */
       const response = await axios.get(API_URL, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -126,9 +114,9 @@ const ProductManagement: React.FC = () => {
     }
   };
 
-  // Memoized filtered products
+  // Memoized filtered and sorted products
   const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
+    let result = products.filter((product) => {
       const matchesSearch =
         product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         product.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -136,7 +124,18 @@ const ProductManagement: React.FC = () => {
       const matchesCategory = filterCategory === "all" || product.category === filterCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [products, searchTerm, filterCategory]);
+
+    // Sorting
+    return result.sort((a, b) => {
+      const aValue = a[orderBy] ?? "";
+      const bValue = b[orderBy] ?? "";
+      if (order === "asc") {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+  }, [products, searchTerm, filterCategory, order, orderBy]);
 
   // Memoized categories
   const categories = useMemo(() => {
@@ -248,9 +247,27 @@ const ProductManagement: React.FC = () => {
     }
   };
 
+  // Handle input change for editing
+  const handleInputChange = (productId: string, field: keyof Product, value: any) => {
+    setEditedProducts((prev) => ({
+      ...prev,
+      [productId]: {
+        ...prev[productId],
+        [field]: value,
+      },
+    }));
+  };
+
+  // Handle image change
+  const handleImageChange = (productId: string, file: File) => {
+    setSelectedImage((prev) => ({
+      ...prev,
+      [productId]: file,
+    }));
+  };
+
   // Handle select product
   const handleSelectProduct = useCallback((productId: string) => {
-    console.log("Selecting product:", productId, "Current selected:", selectedProducts); // Debug log
     setSelectedProducts((prevSelected) =>
       prevSelected.includes(productId)
         ? prevSelected.filter((id) => id !== productId)
@@ -260,7 +277,6 @@ const ProductManagement: React.FC = () => {
 
   // Handle selection mode
   const toggleSelectionMode = useCallback(() => {
-    console.log("Toggling selection mode, current:", selectionMode); // Debug log
     setSelectionMode((prev) => !prev);
     if (selectionMode) {
       setSelectedProducts([]);
@@ -269,7 +285,6 @@ const ProductManagement: React.FC = () => {
 
   // Handle delete dialog
   const handleOpenDialog = useCallback(() => {
-    console.log("Opening delete dialog, selected products:", selectedProducts); // Debug log
     if (selectedProducts.length > 0) {
       setOpenDialog(true);
     } else {
@@ -278,20 +293,17 @@ const ProductManagement: React.FC = () => {
   }, [selectedProducts]);
 
   const handleCloseDialog = useCallback(() => {
-    console.log("Closing delete dialog"); // Debug log
     setOpenDialog(false);
   }, []);
 
   // Handle confirm delete
   const handleConfirmDelete = useCallback(() => {
-    console.log("Confirming delete, selected products:", selectedProducts); // Debug log
     setOpenDialog(false);
     handleDelete();
   }, [selectedProducts]);
 
   // Handle delete products
   const handleDelete = async () => {
-    console.log("Attempting to delete products:", selectedProducts); // Debug log
     if (selectedProducts.length === 0) {
       toast.warn("No products selected for deletion.");
       return;
@@ -305,7 +317,6 @@ const ProductManagement: React.FC = () => {
         return;
       }
 
-      // Send individual DELETE requests for each product
       const deletePromises = selectedProducts.map((id) =>
         axios.delete(`${API_URL}/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -332,28 +343,17 @@ const ProductManagement: React.FC = () => {
     }
   };
 
+  // Handle sorting
+  const handleSort = (property: keyof Product) => () => {
+    const isAsc = orderBy === property && order === "asc";
+    setOrder(isAsc ? "desc" : "asc");
+    setOrderBy(property);
+  };
+
   return (
     <Box sx={{ minHeight: "100vh", backgroundColor: "background.default" }}>
       {/* Mobile Header */}
-      <AppBar position="sticky" sx={{ mb: 2 }}>
-        <Toolbar>
-          <Typography variant="h6" sx={{ flexGrow: 1, fontWeight: "bold" }}>
-            Product Management
-          </Typography>
-          {selectionMode && (
-            <Badge badgeContent={selectedProducts.length} color="secondary">
-              <IconButton color="inherit" onClick={toggleSelectionMode}>
-                <Close />
-              </IconButton>
-            </Badge>
-          )}
-          {!selectionMode && (
-            <IconButton color="inherit" onClick={() => setIsCreating(!isCreating)}>
-              <Add />
-            </IconButton>
-          )}
-        </Toolbar>
-      </AppBar>
+      <Navbar />
 
       {/* Main Content */}
       <Box sx={{ maxWidth: { xs: "100%", sm: 600, md: 960, lg: 1280, xl: 1920 }, mx: "auto", px: { xs: 2, sm: 3, md: 4 }, pb: 10 }}>
@@ -390,7 +390,7 @@ const ProductManagement: React.FC = () => {
           />
         )}
 
-        {/* Products List */}
+        {/* Products Table */}
         {loading && products.length === 0 ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
             <CircularProgress size={60} />
@@ -400,26 +400,199 @@ const ProductManagement: React.FC = () => {
             <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: "bold" }}>
               {filteredProducts.length} Product{filteredProducts.length !== 1 ? "s" : ""}
             </Typography>
-            {filteredProducts.map((product) => (
-              <ProductCard
-                key={product._id}
-                product={product}
-                editedProducts={editedProducts}
-                setEditedProducts={setEditedProducts}
-                selectedImage={selectedImage}
-                setSelectedImage={setSelectedImage}
-                expandedCards={expandedCards}
-                setExpandedCards={setExpandedCards}
-                editingProduct={editingProduct}
-                setEditingProduct={setEditingProduct}
-                loading={loading}
-                selectionMode={selectionMode}
-                selectedProducts={selectedProducts}
-                setSelectedProducts={setSelectedProducts}
-                handleSaveProduct={handleSaveProduct}
-                handleSelectProduct={handleSelectProduct}
-              />
-            ))}
+            <TableContainer component={Paper} sx={{ mt: 2 }}>
+              <Table stickyHeader>
+                <TableHead>
+                  <TableRow>
+                    {selectionMode && (
+                      <TableCell padding="checkbox">
+                        <Checkbox
+                          checked={selectedProducts.length === filteredProducts.length && filteredProducts.length > 0}
+                          onChange={() =>
+                            setSelectedProducts(
+                              selectedProducts.length === filteredProducts.length
+                                ? []
+                                : filteredProducts.map((p) => p._id)
+                            )
+                          }
+                        />
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <TableSortLabel
+                        active={orderBy === "name"}
+                        direction={orderBy === "name" ? order : "asc"}
+                        onClick={handleSort("name")}
+                      >
+                        Name
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>Description</TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={orderBy === "price"}
+                        direction={orderBy === "price" ? order : "asc"}
+                        onClick={handleSort("price")}
+                      >
+                        Price
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>
+                      <TableSortLabel
+                        active={orderBy === "stock"}
+                        direction={orderBy === "stock" ? order : "asc"}
+                        onClick={handleSort("stock")}
+                      >
+                        Stock
+                      </TableSortLabel>
+                    </TableCell>
+                    <TableCell>Category</TableCell>
+                    <TableCell>Image</TableCell>
+                    <TableCell>Actions</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {filteredProducts.map((product) => (
+                    <TableRow key={product._id} hover>
+                      {selectionMode && (
+                        <TableCell padding="checkbox">
+                          <Checkbox
+                            checked={selectedProducts.includes(product._id)}
+                            onChange={() => handleSelectProduct(product._id)}
+                          />
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        {editingProduct === product._id ? (
+                          <TextField
+                            value={editedProducts[product._id]?.name ?? product.name}
+                            onChange={(e) => handleInputChange(product._id, "name", e.target.value)}
+                            size="small"
+                            fullWidth
+                            inputProps={{ "aria-label": "Product name" }}
+                          />
+                        ) : (
+                          product.name
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingProduct === product._id ? (
+                          <TextField
+                            value={editedProducts[product._id]?.description ?? product.description ?? ""}
+                            onChange={(e) => handleInputChange(product._id, "description", e.target.value)}
+                            size="small"
+                            fullWidth
+                            inputProps={{ "aria-label": "Product description" }}
+                          />
+                        ) : (
+                          product.description ?? "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {product.price == null
+                          ? "-"
+                          : editingProduct === product._id ? (
+                              <TextField
+                                type="number"
+                                value={editedProducts[product._id]?.price ?? product.price}
+                                onChange={(e) => handleInputChange(product._id, "price", parseFloat(e.target.value))}
+                                size="small"
+                                fullWidth
+                                inputProps={{ "aria-label": "Product price" }}
+                              />
+                            ) : (
+                              `₦${product.price.toFixed(2)}`
+                            )}
+                      </TableCell>
+                      <TableCell>
+                        {product.stock == null
+                          ? "-"
+                          : editingProduct === product._id ? (
+                              <TextField
+                                type="number"
+                                value={editedProducts[product._id]?.stock ?? product.stock}
+                                onChange={(e) => handleInputChange(product._id, "stock", parseInt(e.target.value))}
+                                size="small"
+                                fullWidth
+                                inputProps={{ "aria-label": "Product stock" }}
+                              />
+                            ) : (
+                              product.stock
+                            )}
+                      </TableCell>
+                      <TableCell>
+                        {editingProduct === product._id ? (
+                          <TextField
+                            value={editedProducts[product._id]?.category ?? product.category ?? ""}
+                            onChange={(e) => handleInputChange(product._id, "category", e.target.value)}
+                            size="small"
+                            fullWidth
+                            inputProps={{ "aria-label": "Product category" }}
+                          />
+                        ) : (
+                          product.category ?? "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingProduct === product._id ? (
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleImageChange(product._id, e.target.files[0]);
+                              }
+                            }}
+                            aria-label="Upload product image"
+                          />
+                        ) : product.image ? (
+                          <img src={product.image} alt={product.name} style={{ width: 50, height: 50, objectFit: "cover" }} />
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {editingProduct === product._id ? (
+                          <>
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              size="small"
+                              onClick={() => handleSaveProduct(product._id)}
+                              disabled={loading}
+                              sx={{ mr: 1 }}
+                              aria-label="Save product"
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color="secondary"
+                              size="small"
+                              onClick={() => setEditingProduct(null)}
+                              aria-label="Cancel edit"
+                            >
+                              Cancel
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            size="small"
+                            onClick={() => setEditingProduct(product._id)}
+                            disabled={selectionMode}
+                            aria-label={`Edit product ${product.name}`}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Box>
         )}
 
@@ -434,36 +607,36 @@ const ProductManagement: React.FC = () => {
             </Typography>
           </Box>
         )}
+
+        {/* Floating Action Button */}
+        <SpeedDial
+          ariaLabel="Product actions"
+          sx={{ position: "fixed", bottom: 16, right: 16 }}
+          icon={<SpeedDialIcon />}
+        >
+          <SpeedDialAction
+            icon={<Add />}
+            tooltipTitle="Create Product"
+            onClick={() => setIsCreating(!isCreating)}
+          />
+          <SpeedDialAction
+            icon={<SelectAll />}
+            tooltipTitle="Select Mode"
+            onClick={toggleSelectionMode}
+          />
+        </SpeedDial>
+
+        {/* Delete Confirmation Dialog */}
+        <DeleteConfirmationDialog
+          openDialog={openDialog}
+          selectedProducts={selectedProducts}
+          handleCloseDialog={handleCloseDialog}
+          handleConfirmDelete={handleConfirmDelete}
+          handleDelete={handleDelete}
+        />
+
+        <ToastContainer position="top-center" autoClose={3000} />
       </Box>
-
-      {/* Floating Action Button */}
-      <SpeedDial
-        ariaLabel="Product actions"
-        sx={{ position: "fixed", bottom: 16, right: 16 }}
-        icon={<SpeedDialIcon />}
-      >
-        <SpeedDialAction
-          icon={<Add />}
-          tooltipTitle="Create Product"
-          onClick={() => setIsCreating(!isCreating)}
-        />
-        <SpeedDialAction
-          icon={<SelectAll />}
-          tooltipTitle="Select Mode"
-          onClick={toggleSelectionMode}
-        />
-      </SpeedDial>
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmationDialog
-        openDialog={openDialog}
-        selectedProducts={selectedProducts}
-        handleCloseDialog={handleCloseDialog}
-        handleConfirmDelete={handleConfirmDelete}
-        handleDelete={handleDelete}
-      />
-
-      <ToastContainer position="top-center" autoClose={3000} />
     </Box>
   );
 };

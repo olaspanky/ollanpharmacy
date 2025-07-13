@@ -6,6 +6,14 @@ import { Order, Rider } from '../../types/order';
 import OrderCard from './OrderCard';
 import OrderModal from './OrderModal';
 import { Bell, Search, Filter, LogOut, Package, TrendingUp, Users, Clock } from 'lucide-react';
+import { AxiosError } from 'axios';
+import { useAuth } from "../../context/AuthContext";
+import { useRouter } from "next/navigation";
+import Navbar from './Navbar2';
+// Define the expected error response structure
+interface ApiErrorResponse {
+  message?: string;
+}
 
 export default function SellerDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -15,11 +23,13 @@ export default function SellerDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+    const router = useRouter();
+    const { user, logout } = useAuth();
 
   const loadOrders = async () => {
     try {
       console.log('Fetching seller orders...');
-      const data = await fetchAdminOrders(); // Reuse fetchAdminOrders for sellers
+      const data = await fetchAdminOrders();
       console.log('Orders received:', data);
       const sortedOrders = data.sort((a: Order, b: Order) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -52,30 +62,44 @@ export default function SellerDashboard() {
     return () => clearInterval(refreshInterval);
   }, []);
 
-const handleAction = async (orderId: string, action: 'accept' | 'reject' | 'en_route' | 'delivered' | 'assign-rider', riderId?: string) => {
+    const handleLogout = async () => {
     try {
-      console.log(`Handling action ${action} for order ${orderId}${riderId ? ` with rider ${riderId}` : ''}`);
-      if (action === 'assign-rider' && riderId) {
-        const updatedOrder = await assignRider(orderId, riderId);
-        setOrders(
-          orders.map((order) =>
-            order._id === orderId ? { ...order, riderId, riderName: riders.find((r) => r._id === riderId)?.name } : order
-          )
-        );
-      } else if (action === 'accept' || action === 'reject') {
-        const updatedOrder = await updateOrderStatus(orderId, action);
-        setOrders(
-          orders.map((order) =>
-            order._id === orderId ? { ...order, status: action } : order
-          )
-        );
-      }
-    } catch (err) {
-      console.error(`Error handling action ${action} for order ${orderId}:`, err);
-      setError(`Failed to ${action === 'assign-rider' ? 'assign rider to' : action} order`);
+      await logout();
+
+      router.push("/pages/signin");
+    } catch (error) {
+      console.error("Logout error:", error);
     }
   };
 
+ const handleAction = async (
+  orderId: string,
+  action: 'accept' | 'reject' | 'en_route' | 'delivered' | 'assign-rider',
+  riderId?: string
+) => {
+  try {
+    console.log(`Handling action ${action} for order ${orderId}${riderId ? ` with rider ${riderId}` : ''}`);
+    setError(null); // Clear previous errors
+
+    if (action === 'assign-rider' && riderId) {
+      const updatedOrder = await assignRider(orderId, riderId);
+      await loadOrders();
+    } else if (action === 'accept' || action === 'reject') {
+      const updatedOrder = await updateOrderStatus(orderId, action);
+      await loadOrders();
+    } else {
+      setError(`Action ${action} is not supported for sellers`);
+    }
+  } catch (err) {
+    const axiosError = err as AxiosError<ApiErrorResponse>;
+    console.error(`Error handling action ${action} for order ${orderId}:`, {
+      message: axiosError.message,
+      response: axiosError.response?.data,
+      status: axiosError.response?.status,
+    });
+    setError(axiosError.response?.data?.message || `Failed to ${action === 'assign-rider' ? 'assign rider to' : action} order`);
+  }
+};
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -100,7 +124,6 @@ const handleAction = async (orderId: string, action: 'accept' | 'reject' | 'en_r
 
   const stats = {
     total: orders.length,
-    pending: orders.filter((o) => o.status === 'pending').length,
     accepted: orders.filter((o) => o.status === 'accepted').length,
     rejected: orders.filter((o) => o.status === 'rejected').length,
     processing: orders.filter((o) => o.status === 'processing').length,
@@ -120,33 +143,7 @@ const handleAction = async (orderId: string, action: 'accept' | 'reject' | 'en_r
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md border-b border-slate-200/50 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
-                <Package className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent">
-                  Seller Dashboard
-                </h1>
-                <p className="text-slate-500 text-sm">Manage your orders efficiently</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button className="relative p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors">
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-              </button>
-              <button className="flex items-center space-x-2 px-4 py-2 bg-slate-800 text-white rounded-lg hover:bg-slate-700 transition-colors">
-                <LogOut className="w-4 h-4" />
-                <span>Logout</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+     <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Stats Cards */}
@@ -162,17 +159,7 @@ const handleAction = async (orderId: string, action: 'accept' | 'reject' | 'en_r
               </div>
             </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-slate-500 text-sm font-medium">Pending</p>
-                <p className="text-3xl font-bold text-amber-600">{stats.pending}</p>
-              </div>
-              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center">
-                <Clock className="w-6 h-6 text-white" />
-              </div>
-            </div>
-          </div>
+        
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
@@ -218,7 +205,6 @@ const handleAction = async (orderId: string, action: 'accept' | 'reject' | 'en_r
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <option value="all">All Status</option>
-                <option value="pending">Pending</option>
                 <option value="accepted">Accepted</option>
                 <option value="rejected">Rejected</option>
                 <option value="processing">Processing</option>
@@ -246,7 +232,7 @@ const handleAction = async (orderId: string, action: 'accept' | 'reject' | 'en_r
                 <div key={order._id} className="transform hover:scale-105 transition-all duration-300">
                   <div className="bg-white/90 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
                     <OrderCard
-                      order={order} // Correct prop name
+                      order={order}
                       onView={() => setSelectedOrder(order)}
                       onAction={handleAction}
                       isRider={false}
