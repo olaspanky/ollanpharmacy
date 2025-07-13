@@ -1097,9 +1097,14 @@ const openQuantityModal = (product: Product) => {
               </div>
             ))
           ) : (
-            <div className="col-span-full text-center py-8">
-              <p className="text-gray-500">in a sec...</p>
-            </div>
+            <div className="flex flex-col items-center justify-center py-8 mb-8">
+        <div className="relative">
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-r-blue-400 rounded-full animate-spin animation-delay-150"></div>
+        </div>
+        <p className="mt-4 text-lg font-medium text-gray-700">Finding amazing products for you...</p>
+        <p className="text-sm text-gray-500 mt-1">This won't take long</p>
+      </div>
           )}
         </div>
       </div>
