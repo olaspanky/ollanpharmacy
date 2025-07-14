@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -192,60 +193,96 @@ const ProductManagement: React.FC = () => {
   };
 
   // Handle save product
-  const handleSaveProduct = async (productId: string): Promise<void> => {
-    const edited = editedProducts[productId];
-    if (!edited || Object.keys(edited).length === 0) {
-      toast.info("No changes to save.");
+ // Handle save product - FIXED VERSION
+const handleSaveProduct = async (productId: string): Promise<void> => {
+  const edited = editedProducts[productId];
+  const hasImageChange = selectedImage[productId];
+  
+  // Check if there are any changes at all (either field changes or image change)
+  if ((!edited || Object.keys(edited).length === 0) && !hasImageChange) {
+    toast.info("No changes to save.");
+    return;
+  }
+  
+  setLoading(true);
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast.error("Please log in to update products");
+      setLoading(false);
       return;
     }
-    setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        toast.error("Please log in to update products");
-        setLoading(false);
-        return;
-      }
 
-      let updatedFields = { ...edited };
-      if (selectedImage[productId]) {
-        const formData = new FormData();
-        formData.append("image", selectedImage[productId]);
-        const imageRes = await axios.post(`${API_URL}/${productId}/upload-image`, formData, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "multipart/form-data",
-          },
-        });
-        updatedFields.image = imageRes.data.image;
-        updatedFields.imagePublicId = imageRes.data.imagePublicId;
-      }
-
-      await axios.put(`${API_URL}/${productId}`, updatedFields, {
-        headers: { Authorization: `Bearer ${token}` },
+    // Create FormData for the update request
+    const formData = new FormData();
+    
+    // Add text fields to FormData
+    if (edited) {
+      Object.entries(edited).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, value.toString());
+        }
       });
-
-      toast.success("Product updated successfully.");
-      setProducts((prev) =>
-        prev.map((p) => (p._id === productId ? { ...p, ...updatedFields } : p))
-      );
-      setEditedProducts((prev) => {
-        const newEdited = { ...prev };
-        delete newEdited[productId];
-        return newEdited;
-      });
-      setSelectedImage((prev) => {
-        const newSelected = { ...prev };
-        delete newSelected[productId];
-        return newSelected;
-      });
-      setEditingProduct(null);
-    } catch (error: any) {
-      toast.error(error.response?.data?.message || "Failed to update product.");
-    } finally {
-      setLoading(false);
     }
-  };
+    
+    // Add image file if selected
+    if (hasImageChange) {
+      formData.append("image", selectedImage[productId]);
+    }
+
+    // Send update request with FormData
+    const response = await axios.put(`${API_URL}/${productId}`, formData, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "multipart/form-data",
+      },
+    });
+
+    toast.success("Product updated successfully.");
+    
+    // Update local state with the response data
+    setProducts((prev) =>
+      prev.map((p) => (p._id === productId ? { ...p, ...response.data.product } : p))
+    );
+    
+    // Clear editing states
+    setEditedProducts((prev) => {
+      const newEdited = { ...prev };
+      delete newEdited[productId];
+      return newEdited;
+    });
+    
+    setSelectedImage((prev) => {
+      const newSelected = { ...prev };
+      delete newSelected[productId];
+      return newSelected;
+    });
+    
+    setEditingProduct(null);
+    
+  } catch (error: any) {
+    toast.error(error.response?.data?.message || "Failed to update product.");
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Alternative approach - Handle image change to also update editedProducts
+const handleImageChange = (productId: string, file: File) => {
+  setSelectedImage((prev) => ({
+    ...prev,
+    [productId]: file,
+  }));
+  
+  // Also mark that this product has been edited
+  setEditedProducts((prev) => ({
+    ...prev,
+    [productId]: {
+      ...prev[productId],
+      _imageChanged: true, // Flag to indicate image was changed
+    },
+  }));
+};
 
   // Handle input change for editing
   const handleInputChange = (productId: string, field: keyof Product, value: any) => {
@@ -259,12 +296,7 @@ const ProductManagement: React.FC = () => {
   };
 
   // Handle image change
-  const handleImageChange = (productId: string, file: File) => {
-    setSelectedImage((prev) => ({
-      ...prev,
-      [productId]: file,
-    }));
-  };
+ 
 
   // Handle select product
   const handleSelectProduct = useCallback((productId: string) => {
