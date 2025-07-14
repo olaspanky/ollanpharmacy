@@ -855,8 +855,7 @@ useEffect(() => {
     <div className="min-h-screen bg-gray-50">
       <header className="bg-gradient-to-r from-white via-gray-50 to-white backdrop-blur-md shadow-lg border-b border-gray-100 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
+            <div className="flex items-center justify-between w-full">
               <Link href="/">
                 <div className="p-2">
                   <Image src={logo} alt="Ollan Logo" width={80} height={80} className="lg:w-20 w-12 filter drop-shadow-sm" />
@@ -864,7 +863,7 @@ useEffect(() => {
               </Link>
               <div className="flex space-x-1 bg-gray-100 p-1 rounded-full shadow-inner">
                 <button
-                  className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  className={`lg:px-6 lg:py-2.5 px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
                     viewMode === "Pharmacy"
                       ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30"
                       : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
@@ -875,10 +874,10 @@ useEffect(() => {
                   }}
                   aria-label="Switch to Pharmacy view"
                 >
-                  <span className="flex items-center gap-2">💊 Pharmacy</span>
+                  <span className="flex text-sm lg:text-lg items-center gap-2">💊<span className="hidden lg:flex">Pharmacy</span> </span>
                 </button>
                 <button
-                  className={`px-6 py-2.5 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
+                  className={`lg:px-6 lg:py-2.5 px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
                     viewMode === "Supermarket"
                       ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30"
                       : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
@@ -889,24 +888,34 @@ useEffect(() => {
                   }}
                   aria-label="Switch to Supermarket view"
                 >
-                  <span className="flex items-center gap-2">🛒 Supermarket</span>
+                  <span className="flex text-sm lg:text-lg items-center gap-2">🛒<span className="hidden lg:flex">Supermarket</span> </span>
                 </button>
+
+              
               </div>
-            </div>
-            <button
+                <button
               onClick={() => setIsCartOpen(true)}
               className="relative p-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl hover:from-red-600 hover:to-red-700 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/30 group"
               aria-label="Open cart"
             >
-              <ShoppingCart size={24} className="group-hover:animate-pulse" />
-              {cart.length > 0 && (
+<div className="group">
+      <ShoppingCart
+        size={24}
+        className="hidden md:block" // Hidden on mobile, shown on md+ (≥768px)
+      />
+      <ShoppingCart
+        size={12}
+        className="md:hidden" // Shown on mobile (<768px)
+      />
+    </div>              {cart.length > 0 && (
                 <span className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-xs font-bold rounded-full h-7 w-7 flex items-center justify-center shadow-lg border-2 border-white animate-bounce">
                   {cart.reduce((total, item) => total + item.quantity, 0)}
                 </span>
               )}
               <div className="absolute inset-0 bg-white rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
             </button>
-          </div>
+            </div>
+           
         </div>
         <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-200 to-transparent"></div>
       </header>
@@ -1043,7 +1052,7 @@ useEffect(() => {
                   <button
                     onClick={() => openQuantityModal(product)}
                     disabled={product.stock === 0}
-                    className={`w-full p-1 lg:py-2 text-[8px] lg:text-xs rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
+                    className={`w-full p-1 lg:py-2 text-sm lg:text-sm rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
                       product.stock > 0
                         ? "bg-red-500 text-white hover:bg-red-600"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -1107,7 +1116,7 @@ useEffect(() => {
                   <button
                     onClick={() => openQuantityModal(product)}
                     disabled={product.stock === 0}
-                    className={`w-full p-1 lg:py-2 text-[8px] lg:text-xs rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
+                    className={`w-full p-1 lg:py-2 text-sm lg:text-sm rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
                       product.stock > 0
                         ? "bg-red-500 text-white hover:bg-red-600"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
