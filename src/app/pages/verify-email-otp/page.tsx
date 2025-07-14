@@ -1,13 +1,13 @@
+// pages/verify-email-otp/page.js
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useState, useEffect, FormEvent } from "react";
 import { CheckCircle, AlertCircle, Lock } from "lucide-react";
 import { useAuth } from "../../../context/AuthContext"; // Adjust path if needed
 
 const VerifyEmailOTP = () => {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { setUser } = useAuth();
   const [otp, setOtp] = useState("");
   const [email, setEmail] = useState("");
@@ -16,53 +16,58 @@ const VerifyEmailOTP = () => {
   const [errors, setErrors] = useState({ otp: "" });
 
   useEffect(() => {
-    const emailParam = searchParams.get("email");
+    // Parse email from query parameters client-side
+    const queryParams = new URLSearchParams(window.location.search);
+    const emailParam = queryParams.get("email");
     if (emailParam) {
       setEmail(emailParam);
     } else {
       setStatus("error");
       setMessage("No email provided. Please sign up again.");
     }
-  }, [searchParams]);
+  }, []);
 
-const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-  e.preventDefault();
-  setErrors({ otp: "" });
-  setStatus("loading");
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setErrors({ otp: "" });
+    setStatus("loading");
 
-  if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
-    setErrors({ otp: "Please enter a valid 6-digit code" });
-    setStatus("idle");
-    return;
-  }
-
-  try {
-    const res = await fetch("https://ollanbackend-jr1d3g.fly.dev/api/auth/verify-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, otp }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.message || "Verification failed");
+    if (!otp || otp.length !== 6 || !/^\d{6}$/.test(otp)) {
+      setErrors({ otp: "Please enter a valid 6-digit code" });
+      setStatus("idle");
+      return;
     }
-    setStatus("success");
-    setMessage("Email verified successfully! You can now sign in.");
-    if (data.token && data.user) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      setUser(data.user);
-      setTimeout(() => router.push("/pages/shop"), 2000);
-    }
-  } catch (error) {
-    setStatus("error");
-    setMessage(String(error) || "Verification failed. Please try again.");
-  }
-};
 
-  const handleResend = async () => {
     try {
-      const res = await fetch("https://ollanbackend-jr1d3g.fly.dev/api/auth/resend-verification", {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://ollanbackend-jr1d3g.fly.dev";
+      const res = await fetch(`${apiUrl}/api/auth/verify-email`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || "Verification failed");
+      }
+      setStatus("success");
+      setMessage("Email verified successfully! Redirecting to shop...");
+      if (data.token && data.user) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        setUser(data.user);
+        setTimeout(() => router.push("/pages/shop"), 2000);
+      }
+    } catch (error) {
+      setStatus("error");
+      setMessage(error instanceof Error ? error.message : "Verification failed. Please try again.");
+    }
+  };
+
+  const handleResend = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://ollanbackend-jr1d3g.fly.dev";
+      const res = await fetch(`${apiUrl}/api/auth/resend-verification`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
@@ -75,7 +80,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       setMessage("Verification code resent! Please check your inbox.");
     } catch (error) {
       setStatus("error");
-        setMessage(String(error) || "Failed to resend verification code");
+      setMessage(error instanceof Error ? error.message : "Failed to resend verification code");
     }
   };
 
@@ -90,9 +95,7 @@ const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
             {status === "success" ? "Email Verified!" : status === "error" ? "Verification Failed" : "Verify Your Email"}
           </h1>
           <p className="text-gray-600">
-            {status === "idle" || status === "loading"
-              ? `Enter the 6-digit code sent to ${email}`
-              : message}
+            {status === "idle" || status === "loading" ? `Enter the 6-digit code sent to ${email}` : message}
           </p>
         </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation"; // Removed useSearchParams
+import { useRouter } from "next/navigation"; 
 import { useState, useEffect, useRef } from "react";
 import { Eye, EyeOff, Lock, Mail, UserRound, ArrowRight, CheckCircle, AlertCircle } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
