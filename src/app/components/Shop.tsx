@@ -326,7 +326,7 @@ const openQuantityModal = (product: Product) => {
     [1, 4, 7, 8, 15].includes(Number(product._id))
   );
   const otcProducts = searchedProducts.filter((product) =>
-    ["Pain reliever", "Vitamins and Supplements", "Baby care", "Anti Malaria"].includes(
+    ["Pain reliever", "Vitamins and Supplements", "Baby care", "Anti Malaria", "Sexual Health"].includes(
       product.category || ""
     )
   );
