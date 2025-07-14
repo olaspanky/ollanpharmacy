@@ -1008,11 +1008,12 @@ useEffect(() => {
         {viewMode === "Pharmacy" && otcProducts.length > 0 && (
           <div className="mb-12">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">Over-the-Counter (OTC)</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-2 lg:gap-6">
-              {otcProducts.map((product) => (
+           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-2 lg:gap-2">
+            {otcProducts.length > 0 ? (
+              allProducts.map((product) => (
                 <div
                   key={product._id}
-                  className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+                  className="bg-white rounded-2xl p-1 lg:p-1 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
                 >
                   <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
                     <img
@@ -1029,31 +1030,41 @@ useEffect(() => {
                   </div>
                   <div className="flex-grow">
                     <h4
-                      className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
-                      title={product.name}
+                      className="text-[8px] lg:text-xs font-semibold mb-2 text-gray-900 line-clamp-2"
+                      title={product?.name}
                     >
-                      {product.name}
+                      {product?.name}
                     </h4>
-                    <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
+                    <p className="text-[8] lg:text-xs text-red-500 font-bold mb-4">
                       ₦{product?.price.toLocaleString()}
                     </p>
-                    {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
+                    {product.stock > 0 && <span className="text-green-600 text-xs">✓ In Stock</span>}
                   </div>
                   <button
                     onClick={() => openQuantityModal(product)}
                     disabled={product.stock === 0}
-                    className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
+                    className={`w-full p-1 lg:py-2 text-[8px] lg:text-xs rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
                       product.stock > 0
                         ? "bg-red-500 text-white hover:bg-red-600"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
                     }`}
-                    aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
+                    aria-label={product?.stock > 0 ? `Add ${product?.name} to cart` : `${product?.name} is out of stock`}
                   >
-                    {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                    {product?.stock > 0 ? "Add to Cart" : "Out of Stock"}
                   </button>
                 </div>
-              ))}
-            </div>
+              ))
+            ) : (
+              <div className="col-span-full text-center py-8">
+                <div className="relative flex items-center justify-center space-x-2">
+                  <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                  <div className="absolute w-12 h-12 border-4 border-transparent border-r-blue-400 rounded-full animate-spin animation-delay-150"></div>
+                </div>
+                <p className="mt-4 text-lg font-medium text-gray-700">Finding amazing products for you...</p>
+                <p className="text-sm text-gray-500 mt-1">This won't take long</p>
+              </div>
+            )}
+          </div>
           </div>
         )}
 
@@ -1061,12 +1072,12 @@ useEffect(() => {
           <h3 className="text-2xl font-bold text-gray-900 mb-4">
             {viewMode === "Pharmacy" ? "All Medications" : "Supermarket Products"}
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-2 lg:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-2 lg:gap-2">
             {allProducts.length > 0 ? (
               allProducts.map((product) => (
                 <div
                   key={product._id}
-                  className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+                  className="bg-white rounded-2xl p-1 lg:p-1 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
                 >
                   <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
                     <img
