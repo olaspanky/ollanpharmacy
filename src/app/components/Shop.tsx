@@ -246,35 +246,30 @@ const PharmacyApp: React.FC = () => {
   }, []);
 
   // Fetch products and cart
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const { data } = await api.get("/api/products");
-        setProducts(data);
-        const uniqueCategories = [
-          "All Category",
-          ...new Set(data.map((product: Product) => product.category).filter(Boolean)),
-        ] as string[];
-        setCategories(uniqueCategories);
-      } catch (error: any) {
-        console.error("Error fetching products:", error.message || "Unknown error");
-      }
-    };
+useEffect(() => {
+  const fetchProducts = async () => {
+    try {
+      const { data } = await api.get("/api/products");
+      setProducts(data);
 
-    const fetchCart = async () => {
-      if (user) {
-        try {
-          const { data } = await api.get("/api/cart");
-          cartDispatch({ type: "SET_CART", payload: data.items || [] });
-        } catch (error: any) {
-          console.error("Error fetching cart:", error.message || "Unknown error");
-        }
-      }
-    };
+      // Extract unique categories and filter out undefined/null
+      const uniqueCategoriesSet = new Set(data.map((product: Product) => product.category).filter(Boolean));
+      let uniqueCategories = ["All Category", ...Array.from(uniqueCategoriesSet)] as string[];
 
-    fetchProducts();
-    fetchCart();
-  }, [user]);
+      // Move "Sexual Health" to the second position after "All Category"
+      const sexualHealthIndex = uniqueCategories.indexOf("Sexual Health");
+      if (sexualHealthIndex > 1) { // Ensure it's not "All Category" or already in position
+        uniqueCategories.splice(sexualHealthIndex, 1); // Remove "Sexual Health"
+        uniqueCategories.splice(1, 0, "Sexual Health"); // Insert at second position
+      }
+
+      setCategories(uniqueCategories);
+    } catch (error: any) {
+      console.error("Error fetching products:", error.message || "Unknown error");
+    }
+  };
+  fetchProducts();
+}, []);
 
   // Calculate delivery time
   const calculateDeliveryTime = (orderTime: Date, deliveryOption: string, timeSlot: string): string => {
@@ -1066,7 +1061,7 @@ const PharmacyApp: React.FC = () => {
           <h3 className="text-2xl font-bold text-gray-900 mb-4">
             {viewMode === "Pharmacy" ? "All Medications" : "Supermarket Products"}
           </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-2 lg:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-2 lg:gap-6">
             {allProducts.length > 0 ? (
               allProducts.map((product) => (
                 <div
@@ -1088,20 +1083,20 @@ const PharmacyApp: React.FC = () => {
                   </div>
                   <div className="flex-grow">
                     <h4
-                      className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
+                      className="text-[8px] lg:text-xs font-semibold mb-2 text-gray-900 line-clamp-2"
                       title={product?.name}
                     >
                       {product?.name}
                     </h4>
-                    <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
+                    <p className="text-[8] lg:text-xs text-red-500 font-bold mb-4">
                       ₦{product?.price.toLocaleString()}
                     </p>
-                    {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
+                    {product.stock > 0 && <span className="text-green-600 text-xs">✓ In Stock</span>}
                   </div>
                   <button
                     onClick={() => openQuantityModal(product)}
                     disabled={product.stock === 0}
-                    className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
+                    className={`w-full p-1 lg:py-2 text-[8px] lg:text-xs rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
                       product.stock > 0
                         ? "bg-red-500 text-white hover:bg-red-600"
                         : "bg-gray-300 text-gray-500 cursor-not-allowed"
