@@ -1,7 +1,6 @@
-// components/CheckoutModal.tsx
 "use client";
 
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import { X, User, Phone, Home, Upload, UploadCloud, CreditCard } from "lucide-react";
 
 interface CustomerInfo {
@@ -9,8 +8,11 @@ interface CustomerInfo {
   email: string;
   phone: string;
   prescription?: File | null;
-  deliveryOption: "express" | "timeframe" | "";
-  pickupLocation: "Zik" | "Indy" | "Awo" | "Idia" | "Mellanby" | "";
+  deliveryOption: "express" | "timeframe" | "pickup" | "";
+  pickupLocation: string; // Now a string to accommodate all pickup locations
+  deliveryAddress: string; // Stores selected area (e.g., "Bodija", "University of Ibadan")
+  timeSlot: "12 PM" | "4 PM" | "9 PM" | "6 AM" | "";
+  isUIAddress: boolean; // True for University of Ibadan and UCH
 }
 
 interface CheckoutModalProps {
@@ -41,6 +43,29 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   initializePayment,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const [addressError, setAddressError] = useState<string>("");
+
+  // Predefined delivery areas
+  const deliveryAreas = ["UCH", "Bodija", "Orogun", "Basorun", "University of Ibadan"];
+
+  // Pickup locations for timeframe and pickup options
+  const uiPickupLocations = [
+    "School Gate",
+    "Tedder",
+    "Zik",
+    "Tech TLT",
+    "Social Sciences",
+    "Law",
+    "Education LLLT",
+    "Awo Junction",
+    "Amina Way",
+    "Abadina",
+    "Benue Road",
+    "SUB",
+    "Saint Annes",
+  ];
+  const uchPickupLocations = ["ABH", "First Gate", "Second Gate", "UCH School"];
+  const storeLocation = "Store (1 Fadare Close, Iwo Road)";
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -62,7 +87,20 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       document.removeEventListener("mousedown", handleClickOutside);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, setIsOpen]); // Removed customerInfo and setCustomerInfo from dependencies
+  }, [isOpen, setIsOpen]);
+
+  const handleDeliveryAreaChange = (area: string) => {
+    const isUIAddress = area === "University of Ibadan" || area === "UCH";
+    setCustomerInfo({
+      ...customerInfo,
+      deliveryAddress: area,
+      isUIAddress,
+      deliveryOption: isUIAddress ? customerInfo.deliveryOption : "express", // Non-UI/UCH areas default to express
+      pickupLocation: "", // Reset pickup location when area changes
+      timeSlot: isUIAddress ? customerInfo.timeSlot : "", // Reset time slot for non-UI/UCH
+    });
+    setAddressError("");
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,11 +109,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       customerInfo.email &&
       customerInfo.phone &&
       customerInfo.deliveryOption &&
-      customerInfo.pickupLocation
+      (customerInfo.deliveryOption === "pickup" ? customerInfo.pickupLocation : customerInfo.deliveryAddress) &&
+      (customerInfo.deliveryOption === "timeframe" ? customerInfo.timeSlot : true)
     ) {
       initializePayment();
     } else {
-      alert("Please fill in all required fields, including delivery option and pickup location");
+      alert("Please fill in all required fields, including delivery option, area or pickup location, and time slot (if applicable).");
     }
   };
 
@@ -171,8 +210,38 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
             <div className="space-y-5">
               <div className="bg-gray-50 p-4 rounded-xl">
+                <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
+                  <Home size={18} className="mr-2 text-red-500" />
+                  Delivery Area *
+                </label>
+                <select
+                  required={customerInfo.deliveryOption !== "pickup"}
+                  value={customerInfo.deliveryAddress}
+                  onChange={(e) => handleDeliveryAreaChange(e.target.value)}
+                  disabled={customerInfo.deliveryOption === "pickup"}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
+                  aria-label="Delivery area"
+                >
+                  <option value="" disabled>
+                    Select a delivery area
+                  </option>
+                  {deliveryAreas.map((area) => (
+                    <option key={area} value={area}>
+                      {area}
+                    </option>
+                  ))}
+                </select>
+                {customerInfo.deliveryOption === "express" && customerInfo.deliveryAddress && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    Our rider will contact you to confirm your exact location in {customerInfo.deliveryAddress}.
+                  </p>
+                )}
+                {addressError && <p className="text-sm text-red-600 mt-2">{addressError}</p>}
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-xl">
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Delivery Option * (Fee: {customerInfo.deliveryOption === "express" ? "₦1,500" : customerInfo.deliveryOption === "timeframe" ? (cartTotal >= 5000 ? "Free" : "₦500") : "Select an option"})
+                  Delivery Option * (Fee: {customerInfo.deliveryOption === "express" ? "₦1,500" : customerInfo.deliveryOption === "timeframe" ? (cartTotal >= 5000 ? "Free" : "₦500") : customerInfo.deliveryOption === "pickup" ? "Free" : "Select an option"})
                 </label>
                 <div className="space-y-3">
                   <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
@@ -183,7 +252,13 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       value="express"
                       checked={customerInfo.deliveryOption === "express"}
                       onChange={(e) =>
-                        setCustomerInfo({ ...customerInfo, deliveryOption: e.target.value as "express" })
+                        setCustomerInfo({
+                          ...customerInfo,
+                          deliveryOption: e.target.value as "express",
+                          pickupLocation: "",
+                          timeSlot: "",
+                          deliveryAddress: customerInfo.deliveryAddress || "",
+                        })
                       }
                       className="h-4 w-4 text-red-600 focus:ring-red-500"
                       aria-label="Express delivery"
@@ -193,61 +268,128 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <span className="block text-xs text-gray-500">Within 1 hour (₦1,500)</span>
                     </div>
                   </label>
-                  <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
-                    <input
-                      type="radio"
-                      id="timeframe"
-                      name="deliveryOption"
-                      value="timeframe"
-                      checked={customerInfo.deliveryOption === "timeframe"}
-                      onChange={(e) =>
-                        setCustomerInfo({ ...customerInfo, deliveryOption: e.target.value as "timeframe" })
-                      }
-                      className="h-4 w-4 text-red-600 focus:ring-red-500"
-                      aria-label="Timeframe delivery"
-                    />
-                    <div className="ml-3">
-                      <span className="block text-sm font-medium text-gray-800">Timeframe Delivery</span>
-                      <span className="block text-xs text-gray-500">{cartTotal >= 5000 ? "Free (12 PM, 4 PM, 9 PM, 6 AM)" : "₦500 (12 PM, 4 PM, 9 PM, 6 AM)"}</span>
-                    </div>
-                  </label>
+                  {customerInfo.isUIAddress && (
+                    <>
+                      <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
+                        <input
+                          type="radio"
+                          id="timeframe"
+                          name="deliveryOption"
+                          value="timeframe"
+                          checked={customerInfo.deliveryOption === "timeframe"}
+                          onChange={(e) =>
+                            setCustomerInfo({
+                              ...customerInfo,
+                              deliveryOption: e.target.value as "timeframe",
+                              pickupLocation: "",
+                              deliveryAddress: customerInfo.deliveryAddress || "",
+                            })
+                          }
+                          className="h-4 w-4 text-red-600 focus:ring-red-500"
+                          aria-label="Timeframe delivery"
+                        />
+                        <div className="ml-3">
+                          <span className="block text-sm font-medium text-gray-800">Timeframe Delivery</span>
+                          <span className="block text-xs text-gray-500">{cartTotal >= 5000 ? "Free (12 PM, 4 PM, 9 PM, 6 AM)" : "₦500 (12 PM, 4 PM, 9 PM, 6 AM)"}</span>
+                        </div>
+                      </label>
+                      <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
+                        <input
+                          type="radio"
+                          id="pickup"
+                          name="deliveryOption"
+                          value="pickup"
+                          checked={customerInfo.deliveryOption === "pickup"}
+                          onChange={(e) =>
+                            setCustomerInfo({
+                              ...customerInfo,
+                              deliveryOption: e.target.value as "pickup",
+                              timeSlot: "",
+                              deliveryAddress: "",
+                            })
+                          }
+                          className="h-4 w-4 text-red-600 focus:ring-red-500"
+                          aria-label="Pickup"
+                        />
+                        <div className="ml-3">
+                          <span className="block text-sm font-medium text-gray-800">Pickup</span>
+                          <span className="block text-xs text-gray-500">Free (At store or UI/UCH location)</span>
+                        </div>
+                      </label>
+                    </>
+                  )}
                 </div>
-                {estimatedDelivery && (
+                {estimatedDelivery && customerInfo.deliveryOption !== "pickup" && (
                   <p className="text-sm text-gray-600 mt-3 bg-red-50 p-2 rounded-md">
                     <span className="font-medium">Estimated Delivery:</span> {estimatedDelivery}
                   </p>
                 )}
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                  <Home size={18} className="mr-2 text-red-500" />
-                  Pickup Location *
-                </label>
-                <select
-                  required
-                  value={customerInfo.pickupLocation}
-                  onChange={(e) =>
-                    setCustomerInfo({
-                      ...customerInfo,
-                      pickupLocation: e.target.value as "Zik" | "Indy" | "Awo" | "Idia" | "Mellanby",
-                    })
-                  }
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
-                  aria-label="Pickup location"
-                >
-                  <option value="" disabled>
-                    Select a pickup location
-                  </option>
-                  {["Zik", "Indy", "Awo", "Idia", "Mellanby"].map((location) => (
-                    <option key={location} value={location}>
-                      {location}
+              {customerInfo.isUIAddress && customerInfo.deliveryOption === "timeframe" && (
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
+                    <Home size={18} className="mr-2 text-red-500" />
+                    Delivery Time Slot *
+                  </label>
+                  <select
+                    required
+                    value={customerInfo.timeSlot}
+                    onChange={(e) =>
+                      setCustomerInfo({
+                        ...customerInfo,
+                        timeSlot: e.target.value as "12 PM" | "4 PM" | "9 PM" | "6 AM",
+                      })
+                    }
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
+                    aria-label="Delivery time slot"
+                  >
+                    <option value="" disabled>
+                      Select a time slot
                     </option>
-                  ))}
-                </select>
-              </div>
+                    {["12 PM", "4 PM", "9 PM", "6 AM"].map((slot) => (
+                      <option key={slot} value={slot}>
+                        {slot}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
-              <div className="bg-gray-50 p-4 rounded-xl">
+              {(customerInfo.isUIAddress || customerInfo.deliveryOption === "pickup") && (
+                <div className="bg-gray-50 p-4 rounded-xl">
+                  <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
+                    <Home size={18} className="mr-2 text-red-500" />
+                    {customerInfo.deliveryOption === "pickup" ? "Pickup Location *" : "Dropoff Location *"}
+                  </label>
+                  <select
+                    required
+                    value={customerInfo.pickupLocation}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, pickupLocation: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
+                    aria-label={customerInfo.deliveryOption === "pickup" ? "Pickup location" : "Dropoff location"}
+                  >
+                    <option value="" disabled>
+                      Select a {customerInfo.deliveryOption === "pickup" ? "pickup" : "dropoff"} location
+                    </option>
+                    {customerInfo.deliveryOption === "pickup" && <option value={storeLocation}>{storeLocation}</option>}
+                    {customerInfo.deliveryAddress === "University of Ibadan" &&
+                      uiPickupLocations.map((location) => (
+                        <option key={location} value={location}>
+                          {location}
+                        </option>
+                      ))}
+                    {customerInfo.deliveryAddress === "UCH" &&
+                      uchPickupLocations.map((location) => (
+                        <option key={location} value={location}>
+                          {location}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+
+              {/* <div className="bg-gray-50 p-4 rounded-xl">
                 <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
                   <Upload size={18} className="mr-2 text-red-500" />
                   Upload Prescription (Optional)
@@ -275,7 +417,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     <span className="font-medium">Uploaded:</span> {customerInfo.prescription.name}
                   </p>
                 )}
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -291,9 +433,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   {customerInfo.deliveryOption
                     ? customerInfo.deliveryOption === "express"
                       ? "₦1,500"
+                      : customerInfo.deliveryOption === "pickup"
+                      ? "Free"
                       : cartTotal >= 5000
-                        ? "Free"
-                        : "₦500"
+                      ? "Free"
+                      : "₦500"
                     : "N/A"}
                 </span>
               </div>
@@ -304,7 +448,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
             <button
               type="submit"
-              disabled={isProcessing || !isPaystackLoaded}
+              disabled={isProcessing || !isPaystackLoaded || !!addressError}
               className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white py-4 rounded-xl font-bold hover:from-red-700 hover:to-red-600 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-red-200"
               aria-label="Proceed to payment"
             >
