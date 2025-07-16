@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useReducer, useCallback } from "react";
+import React, { useState, useRef, useEffect, useReducer, useCallback, useMemo } from "react";
 import { ShoppingCart, Plus, Minus, X, Search, Home, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -10,6 +10,7 @@ import { Product, CartItem } from "../../types";
 import { useRouter } from "next/navigation";
 import api from "@/src/lib/api";
 import CheckoutModal from "./CheckoutModal";
+
 
 // Paystack type declaration
 interface PaystackPop {
@@ -112,8 +113,18 @@ interface CustomerInfo {
   isUIAddress: boolean; // True for University of Ibadan and UCH
 }
 
+ const supermarketCategories = ["All Products", "Baby Care", "Groceries", "Beverages", "Household"];
+const pharmacyCategories = [
+  "Pain reliever",
+  "Vitamins and Supplements",
+  "Baby Care",
+  "Anti Malaria",
+  "Sexual Health",
+  "Cough and Cold",
+];
+
 const PharmacyApp: React.FC = () => {
-  const { user } = useAuth();
+ const { user } = useAuth();
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState<string>("All Category");
   const [viewMode, setViewMode] = useState<"Pharmacy" | "Supermarket">("Pharmacy");
@@ -246,30 +257,31 @@ const PharmacyApp: React.FC = () => {
   }, []);
 
   // Fetch products and cart
-useEffect(() => {
-  const fetchProducts = async () => {
-    try {
-      const { data } = await api.get("/api/products");
-      setProducts(data);
+ useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const { data }: { data: Product[] } = await api.get("/api/products");
+        setProducts(data);
 
-      // Extract unique categories and filter out undefined/null
-      const uniqueCategoriesSet = new Set(data.map((product: Product) => product.category).filter(Boolean));
-      let uniqueCategories = ["All Category", ...Array.from(uniqueCategoriesSet)] as string[];
-
-      // Move "Sexual Health" to the second position after "All Category"
-      const sexualHealthIndex = uniqueCategories.indexOf("Sexual Health");
-      if (sexualHealthIndex > 1) { // Ensure it's not "All Category" or already in position
-        uniqueCategories.splice(sexualHealthIndex, 1); // Remove "Sexual Health"
-        uniqueCategories.splice(1, 0, "Sexual Health"); // Insert at second position
+        // Extract unique categories for Pharmacy
+        const uniqueCategoriesSet = new Set<string>(
+          data
+            .filter((product) => product.category && (!supermarketCategories.includes(product.category) || product.category === "Baby Care"))
+            .map((product) => product.category!)
+        );
+        let uniqueCategories = ["All Category", ...Array.from(uniqueCategoriesSet)];
+        const sexualHealthIndex = uniqueCategories.indexOf("Sexual Health");
+        if (sexualHealthIndex > 1) {
+          uniqueCategories.splice(sexualHealthIndex, 1);
+          uniqueCategories.splice(1, 0, "Sexual Health");
+        }
+        setCategories(uniqueCategories);
+      } catch (error: any) {
+        console.error("Error fetching products:", error.message || "Unknown error");
       }
-
-      setCategories(uniqueCategories);
-    } catch (error: any) {
-      console.error("Error fetching products:", error.message || "Unknown error");
-    }
-  };
-  fetchProducts();
-}, []);
+    };
+    fetchProducts();
+  }, []);
 
   // Calculate delivery time
   const calculateDeliveryTime = (orderTime: Date, deliveryOption: string, timeSlot: string): string => {
@@ -312,28 +324,52 @@ useEffect(() => {
     return "";
   };
 
-  // Filter products
-  const filteredProducts =
-    viewMode === "Supermarket"
-      ? products.filter((product) => product.category === "Supermarket")
-      : selectedCategory === "All Category"
-      ? products
-      : products.filter((product) => product.category === selectedCategory);
+// Define Supermarket categories (consistent case)
 
-  const searchedProducts = searchQuery
-    ? filteredProducts.filter((product) =>
-        product.name.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : filteredProducts;
+ const filteredProducts = useMemo(() => {
+    let result = products;
 
-  const popularProducts = searchedProducts.filter((product) =>
-    [1, 4, 7, 8, 15].includes(Number(product._id))
-  );
-  const otcProducts = searchedProducts.filter((product) =>
-    ["Pain reliever", "Vitamins and Supplements", "Baby care", "Anti Malaria", "Sexual Health", "Cough and Cold"].includes(
-      product.category || ""
-    )
-  );
+    if (viewMode === "Supermarket") {
+      result = products.filter(
+        (product) => product.category && supermarketCategories.includes(product.category) && product.category !== "All Products"
+      );
+    } else {
+      result = products.filter(
+        (product) => product.category && (pharmacyCategories.includes(product.category) || !supermarketCategories.includes(product.category))
+      );
+    }
+
+    if (viewMode === "Pharmacy" && selectedCategory !== "All Category") {
+      result = result.filter((product) => product.category === selectedCategory);
+    } else if (viewMode === "Supermarket" && selectedCategory !== "All Products") {
+      result = result.filter((product) => product.category === selectedCategory);
+    }
+
+    return result;
+  }, [products, viewMode, selectedCategory]);
+
+  const searchedProducts = useMemo(() => {
+    return searchQuery
+      ? filteredProducts.filter((product) =>
+          product.name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : filteredProducts;
+  }, [filteredProducts, searchQuery]);
+
+  const popularProducts = useMemo(() => {
+    return viewMode === "Pharmacy"
+      ? searchedProducts.filter((product) => [1, 4, 7, 8, 15].includes(Number(product._id)))
+      : [];
+  }, [searchedProducts, viewMode]);
+
+  const otcProducts = useMemo(() => {
+    return viewMode === "Pharmacy"
+      ? searchedProducts.filter((product) =>
+          product.category && pharmacyCategories.includes(product.category)
+        )
+      : [];
+  }, [searchedProducts, viewMode]);
+
   const allProducts = searchedProducts;
 
   // Calculate cart totals
@@ -922,313 +958,297 @@ useEffect(() => {
     );
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-gradient-to-r from-white via-gray-50 to-white backdrop-blur-md shadow-lg border-b border-gray-100 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between w-full">
-              <Link href="/">
-                <div className="p-2">
-                  <Image src={logo} alt="Ollan Logo" width={80} height={80} className="lg:w-20 w-12 filter drop-shadow-sm" />
-                </div>
-              </Link>
-              <div className="flex space-x-1 bg-gray-100 p-1 rounded-full shadow-inner">
-                <button
-                  className={`lg:px-6 lg:py-2.5 px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
-                    viewMode === "Pharmacy"
-                      ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30"
-                      : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
-                  }`}
-                  onClick={() => {
-                    setViewMode("Pharmacy");
-                    setSelectedCategory("All Category");
-                  }}
-                  aria-label="Switch to Pharmacy view"
-                >
-                  <span className="flex text-sm lg:text-lg items-center gap-2">💊<span className="hidden lg:flex">Pharmacy</span> </span>
-                </button>
-                <button
-                  className={`lg:px-6 lg:py-2.5 px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
-                    viewMode === "Supermarket"
-                      ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30"
-                      : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
-                  }`}
-                  onClick={() => {
-                    setViewMode("Supermarket");
-                    setSelectedCategory("Supermarket");
-                  }}
-                  aria-label="Switch to Supermarket view"
-                >
-                  <span className="flex text-sm lg:text-lg items-center gap-2">🛒<span className="hidden lg:flex">Supermarket</span> </span>
-                </button>
+ // Define supermarket categories
 
-              
-              </div>
-                <button
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2xl hover:from-red-600 hover:to-red-700 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/30 group"
-              aria-label="Open cart"
+return (
+  <div className="min-h-screen bg-gray-50">
+    <header className="bg-gradient-to-r from-white via-gray-50 to-white backdrop-blur-md shadow-lg border-b border-gray-100 sticky top-0 z-40">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="flex items-center justify-between w-full">
+          <Link href="/">
+            <div className="p-2">
+              <Image src={logo} alt="Ollan Logo" width={80} height={80} className="lg:w-20 w-12 filter drop-shadow-sm" />
+            </div>
+          </Link>
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-full shadow-inner">
+            <button
+              className={`lg:px-6 lg:py-2.5 px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
+                viewMode === "Pharmacy"
+                  ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30"
+                  : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
+              }`}
+              onClick={() => {
+                setViewMode("Pharmacy");
+                setSelectedCategory("All Category");
+              }}
+              aria-label="Switch to Pharmacy view"
             >
-<div className="group">
-      <ShoppingCart
-        size={24}
-        className="hidden md:block" // Hidden on mobile, shown on md+ (≥768px)
-      />
-      <ShoppingCart
-        size={12}
-        className="md:hidden" // Shown on mobile (<768px)
-      />
-    </div>              {cart.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-xs font-bold rounded-full h-7 w-7 flex items-center justify-center shadow-lg border-2 border-white animate-bounce">
-                  {cart.reduce((total, item) => total + item.quantity, 0)}
-                </span>
-              )}
-              <div className="absolute inset-0 bg-white rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+              <span className="flex text-sm lg:text-lg items-center gap-2">💊<span className="hidden lg:flex">Pharmacy</span></span>
             </button>
-            </div>
-           
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-200 to-transparent"></div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h2 className="lg:text-3xl text-xl font-bold text-gray-900 mb-8 text-center md:text-left">
-          {viewMode === "Pharmacy"
-            ? "Shop trusted medications, wellness products, and groceries"
-            : "Explore our supermarket products"}
-        </h2>
-
-        <div className="mb-8">
-          <div className="relative max-w-md mx-auto md:mx-0">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearchInputChange(e.target.value)}
-              placeholder={viewMode === "Pharmacy" ? "Search medications..." : "Search supermarket products..."}
-              className="w-full p-1 lg:p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-black"
-              aria-label="Search products"
-            />
-            <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <button
+              className={`lg:px-6 lg:py-2.5 px-6 py-2 rounded-full font-semibold transition-all duration-300 transform hover:scale-105 ${
+                viewMode === "Supermarket"
+                  ? "bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/30"
+                  : "bg-transparent text-gray-600 hover:text-gray-800 hover:bg-white hover:shadow-sm"
+              }`}
+              onClick={() => {
+                setViewMode("Supermarket");
+                setSelectedCategory("All Products"); // Default to "All Products" for Supermarket
+              }}
+              aria-label="Switch to Supermarket view"
+            >
+              <span className="flex text-sm lg:text-lg items-center gap-2">🛒<span className="hidden lg:flex">Supermarket</span></span>
+            </button>
           </div>
-        </div>
-
-        {viewMode === "Pharmacy" && (
-          <div className="flex flex-wrap gap-2 mb-8 justify-center md:justify-start">
-                   {categories.map((category) => (
-                     <button
-                       key={category}
-                       className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                         selectedCategory === category
-                           ? "bg-red-500 text-white shadow-md"
-                           : "bg-white text-gray-700 hover:bg-gray-100 shadow-sm"
-                       }`}
-                       onClick={() => setSelectedCategory(category)}
-                       aria-label={`Filter by ${category}`}
-                     >
-                       {category}
-                     </button>
-                   ))}
-                 </div>
-        )}
-
-        {viewMode === "Pharmacy" && popularProducts.length > 0 && (
-          <div className="mb-12">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Popular Medications</h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-2 lg:gap-6">
-              {popularProducts.map((product) => (
-                <div
-                  key={product._id}
-                  className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
-                >
-                  <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
-                    <img
-                      src={`${product.image}`}
-                      alt={product.name}
-                      className="h-40 object-contain max-w-full"
-                      loading="lazy"
-                    />
-                    {product.stock === 0 && (
-                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-semibold">Out of Stock</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-grow">
-                    <h4
-                      className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
-                      title={product.name}
-                    >
-                      {product.name}
-                    </h4>
-                    <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
-                      ₦{product?.price.toLocaleString()}
-                    </p>
-                    {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
-                  </div>
-                  <button
-                    onClick={() => openQuantityModal(product)}
-                    disabled={product.stock === 0}
-                    className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
-                      product.stock > 0
-                        ? "bg-red-500 text-white hover:bg-red-600"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                    aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
-                  >
-                    {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                  </button>
-                </div>
-              ))}
+          <button
+            onClick={() => setIsCartOpen(true)}
+            className="relative p-4 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-2x hover:from-red-600 hover:to-red-700 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/30 group"
+            aria-label="Open cart"
+          >
+            <div className="group">
+              <ShoppingCart size={24} className="hidden md:block" />
+              <ShoppingCart size={12} className="md:hidden" />
             </div>
-          </div>
-        )}
-
-        {viewMode === "Pharmacy" && otcProducts.length > 0 && (
-          <div className="mb-12">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Over-the-Counter (OTC)</h3>
-           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-2 lg:gap-2">
-            {otcProducts.length > 0 ? (
-              allProducts.map((product) => (
-                <div
-                  key={product._id}
-                  className="bg-white rounded-2xl p-1 lg:p-1 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
-                >
-                  <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
-                    <img
-                      src={`${product.image}`}
-                      alt={product.name}
-                      className="h-40 object-contain max-w-full"
-                      loading="lazy"
-                    />
-                    {product.stock === 0 && (
-                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-semibold">Out of Stock</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-grow">
-                    <h4
-                      className="text-[8px] lg:text-xs font-semibold mb-2 text-gray-900 line-clamp-2"
-                      title={product?.name}
-                    >
-                      {product?.name}
-                    </h4>
-                    <p className="text-[8] lg:text-xs text-red-500 font-bold mb-4">
-                      ₦{product?.price.toLocaleString()}
-                    </p>
-                    {product.stock > 0 && <span className="text-green-600 text-xs">✓ In Stock</span>}
-                  </div>
-                  <button
-                    onClick={() => openQuantityModal(product)}
-                    disabled={product.stock === 0}
-                    className={`w-full p-1 lg:py-2 text-sm lg:text-sm rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
-                      product.stock > 0
-                        ? "bg-red-500 text-white hover:bg-red-600"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                    aria-label={product?.stock > 0 ? `Add ${product?.name} to cart` : `${product?.name} is out of stock`}
-                  >
-                    {product?.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                  </button>
-                </div>
-              ))
-            ) : (
-              <div className="col-span-full text-center py-8">
-                <div className="relative flex items-center justify-center space-x-2">
-                  <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                  <div className="absolute w-12 h-12 border-4 border-transparent border-r-blue-400 rounded-full animate-spin animation-delay-150"></div>
-                </div>
-                <p className="mt-4 text-lg font-medium text-gray-700">Finding amazing products for you...</p>
-                <p className="text-sm text-gray-500 mt-1">This won't take long</p>
-              </div>
+            {cart.length > 0 && (
+              <span className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-yellow-500 text-black text-xs font-bold rounded-full h-7 w-7 flex items-center justify-center shadow-lg border-2 border-white animate-bounce">
+                {cart.reduce((total, item) => total + item.quantity, 0)}
+              </span>
             )}
-          </div>
-          </div>
-        )}
+            <div className="absolute inset-0 bg-white rounded-2xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+          </button>
+        </div>
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-red-200 to-transparent"></div>
+    </header>
 
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <h2 className="lg:text-3xl text-xl font-bold text-gray-900 mb-8 text-center md:text-left">
+        {viewMode === "Pharmacy"
+          ? "Shop trusted medications, wellness products, and groceries"
+          : "Explore our supermarket products"}
+      </h2>
+
+      <div className="mb-8">
+        <div className="relative max-w-md mx-auto md:mx-0">
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => handleSearchInputChange(e.target.value)}
+            placeholder={viewMode === "Pharmacy" ? "Search medications..." : "Search supermarket products..."}
+            className="w-full p-1 lg:p-3 pl-10 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-black"
+            aria-label="Search products"
+          />
+          <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+        </div>
+      </div>
+
+      {/* Render categories based on viewMode */}
+      <div className="mb-8">
+        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 md:flex-wrap md:justify-start md:overflow-visible">
+          {(viewMode === "Pharmacy" ? categories : supermarketCategories).map((category) => (
+            <button
+              key={category}
+              className={`px-4 py-2 rounded-full text-[12px] lg:text-sm font-medium transition-all duration-200 active:scale-95 whitespace-nowrap flex-shrink-0 ${
+                selectedCategory === category
+                  ? "bg-red-500 text-white shadow-md"
+                  : "bg-white text-black hover:bg-gray-100 shadow-sm"
+              }`}
+              onClick={() => setSelectedCategory(category)}
+              aria-label={`Filter by ${category}`}
+            >
+              {category}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {viewMode === "Pharmacy" && popularProducts.length > 0 && (
         <div className="mb-12">
-          <h3 className="text-2xl font-bold text-gray-900 mb-4">
-            {viewMode === "Pharmacy" ? "All Medications" : "Supermarket Products"}
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-2 lg:gap-2">
-            {allProducts.length > 0 ? (
-              allProducts.map((product) => (
-                <div
-                  key={product._id}
-                  className="bg-white rounded-2xl p-1 lg:p-1 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
-                >
-                  <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
-                    <img
-                      src={`${product.image}`}
-                      alt={product.name}
-                      className="h-40 object-contain max-w-full"
-                      loading="lazy"
-                    />
-                    {product.stock === 0 && (
-                      <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
-                        <span className="text-white font-semibold">Out of Stock</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex-grow">
-                    <h4
-                      className="text-[8px] lg:text-xs font-semibold mb-2 text-gray-900 line-clamp-2"
-                      title={product?.name}
-                    >
-                      {product?.name}
-                    </h4>
-                    <p className="text-[8] lg:text-xs text-red-500 font-bold mb-4">
-                      ₦{product?.price.toLocaleString()}
-                    </p>
-                    {product.stock > 0 && <span className="text-green-600 text-xs">✓ In Stock</span>}
-                  </div>
-                  <button
-                    onClick={() => openQuantityModal(product)}
-                    disabled={product.stock === 0}
-                    className={`w-full p-1 lg:py-2 text-sm lg:text-sm rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
-                      product.stock > 0
-                        ? "bg-red-500 text-white hover:bg-red-600"
-                        : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                    }`}
-                    aria-label={product?.stock > 0 ? `Add ${product?.name} to cart` : `${product?.name} is out of stock`}
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Popular Medications</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 xl:grid-cols-5 gap-2 lg:gap-6">
+            {popularProducts.map((product) => (
+              <div
+                key={product._id}
+                className="bg-white rounded-2xl p-2 lg:p-6 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+              >
+                <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
+                  <img
+                    src={`${product.image}`}
+                    alt={product.name}
+                    className="h-40 object-contain max-w-full"
+                    loading="lazy"
+                  />
+                  {product.stock === 0 && (
+                    <div className="absolute inset-0 bg-black/50 rounded-lg rompe flex items-center justify-center">
+                      <span className="text-white font-semibold">Out of Stock</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-grow">
+                  <h4
+                    className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
+                    title={product.name}
                   >
-                    {product?.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                  </button>
+                    {product.name}
+                  </h4>
+                  <p className="text-[14px] lg:text-lg text-red-500 font-bold mb-4">
+                    ₦{product?.price.toLocaleString()}
+                  </p>
+                  {product.stock > 0 && <span className="text-green-600 text-sm">✓ In Stock</span>}
                 </div>
-              ))
-            ) : (
-              <div className="col-span-full text-center py-8">
-                <div className="relative flex items-center justify-center space-x-2">
-                  <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                  <div className="absolute w-12 h-12 border-4 border-transparent border-r-blue-400 rounded-full animate-spin animation-delay-150"></div>
-                </div>
-                <p className="mt-4 text-lg font-medium text-gray-700">Finding amazing products for you...</p>
-                <p className="text-sm text-gray-500 mt-1">This won't take long</p>
+                <button
+                  onClick={() => openQuantityModal(product)}
+                  disabled={product.stock === 0}
+                  className={`w-full p-1 lg:py-2 text-[14px] lg:text-lg rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
+                    product.stock > 0
+                      ? "bg-red-500 text-white hover:bg-red-600"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                  aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
+                >
+                  {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                </button>
               </div>
-            )}
+            ))}
           </div>
         </div>
-      </main>
+      )}
 
-      <QuantityModal />
-      <CartModal />
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        setIsOpen={setIsCheckoutOpen}
-        customerInfo={customerInfo}
-        setCustomerInfo={setCustomerInfo}
-        cartTotal={cartTotal}
-        deliveryFee={deliveryFee}
-        grandTotal={grandTotal}
-        estimatedDelivery={estimatedDelivery}
-        isProcessing={isProcessing}
-        isPaystackLoaded={isPaystackLoaded}
-        initializePayment={initializePayment}
-      />
-      <OrderCompleteModal />
-      <UnauthenticatedModal />
-    </div>
-  );
+      {viewMode === "Pharmacy" && otcProducts.length > 0 && (
+        <div className="mb-12">
+          <h3 className="text-2xl font-bold text-gray-900 mb-4">Over-the-Counter (OTC)</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-2 lg:gap-2">
+            {otcProducts.map((product) => (
+              <div
+                key={product._id}
+                className="bg-white rounded-2xl p-1 lg:p-1 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+              >
+                <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
+                  <img
+                    src={`${product.image}`}
+                    alt={product.name}
+                    className="h-40 object-contain max-w-full"
+                    loading="lazy"
+                  />
+                  {product.stock === 0 && (
+                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold">Out of Stock</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-grow">
+                  <h4
+                    className="text-[8px] lg:text-xs font-semibold mb-2 text-gray-900 line-clamp-2"
+                    title={product?.name}
+                  >
+                    {product?.name}
+                  </h4>
+                  <p className="text-[8] lg:text-xs text-red-500 font-bold mb-4">
+                    ₦{product?.price.toLocaleString()}
+                  </p>
+                  {product.stock > 0 && <span className="text-green-600 text-xs">✓ In Stock</span>}
+                </div>
+                <button
+                  onClick={() => openQuantityModal(product)}
+                  disabled={product.stock === 0}
+                  className={`w-full p-1 lg:py-2 text-sm lg:text-sm rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
+                    product.stock > 0
+                      ? "bg-red-500 text-white hover:bg-red-600"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                  aria-label={product?.stock > 0 ? `Add ${product?.name} to cart` : `${product?.name} is out of stock`}
+                >
+                  {product?.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="mb-12">
+        <h3 className="text-2xl font-bold text-gray-900 mb-4">
+          {viewMode === "Pharmacy" ? "All Medications" : "Supermarket Products"}
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-7 gap-2 lg:gap-2">
+          {filteredProducts.length > 0 ? (
+            filteredProducts.map((product) => (
+              <div
+                key={product._id}
+                className="bg-white rounded-2xl p-1 lg:p-1 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full"
+              >
+                <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50 relative">
+                  <img
+                    src={`${product.image}`}
+                    alt={product.name}
+                    className="h-40 object-contain max-w-full"
+                    loading="lazy"
+                  />
+                  {product.stock === 0 && (
+                    <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-semibold">Out of Stock</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex-grow">
+                  <h4
+                    className="text-[8px] lg:text-xs font-semibold mb-2 text-gray-900 line-clamp-2"
+                    title={product?.name}
+                  >
+                    {product?.name}
+                  </h4>
+                  <p className="text-[8] lg:text-xs text-red-500 font-bold mb-4">
+                    ₦{product?.price.toLocaleString()}
+                  </p>
+                  {product.stock > 0 && <span className="text-green-600 text-xs">✓ In Stock</span>}
+                </div>
+                <button
+                  onClick={() => openQuantityModal(product)}
+                  disabled={product.stock === 0}
+                  className={`w-full p-1 lg:py-2 text-sm lg:text-sm rounded-lg font-semibold transition-all duration-300 active:scale-95 mt-auto ${
+                    product.stock > 0
+                      ? "bg-red-500 text-white hover:bg-red-600"
+                      : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  }`}
+                  aria-label={product?.stock > 0 ? `Add ${product?.name} to cart` : `${product?.name} is out of stock`}
+                >
+                  {product?.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full text-center py-8">
+              <div className="relative flex items-center justify-center space-x-2">
+                <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                <div className="absolute w-12 h-12 border-4 border-transparent border-r-blue-400 rounded-full animate-spin animation-delay-150"></div>
+              </div>
+              <p className="mt-4 text-lg font-medium text-gray-700">Finding amazing products for you...</p>
+              <p className="text-sm text-gray-500 mt-1">This won't take long</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </main>
+
+    <QuantityModal />
+    <CartModal />
+    <CheckoutModal
+      isOpen={isCheckoutOpen}
+      setIsOpen={setIsCheckoutOpen}
+      customerInfo={customerInfo}
+      setCustomerInfo={setCustomerInfo}
+      cartTotal={cartTotal}
+      deliveryFee={deliveryFee}
+      grandTotal={grandTotal}
+      estimatedDelivery={estimatedDelivery}
+      isProcessing={isProcessing}
+      isPaystackLoaded={isPaystackLoaded}
+      initializePayment={initializePayment}
+    />
+    <OrderCompleteModal />
+    <UnauthenticatedModal />
+  </div>
+);
 };
 
 export default PharmacyApp;
