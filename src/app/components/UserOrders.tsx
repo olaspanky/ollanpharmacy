@@ -57,13 +57,25 @@ const UserOrders: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
+  
+useEffect(() => {
+  let isMounted = true;
 
-  useEffect(() => {
-  if (!user) {
-    router.push("/pages/signin");
+  // Early return if user is still loading (initial state is null/undefined)
+  if (user === null || user === undefined) {
+    setLoading(true); // Optional: Show loading state while auth resolves
     return;
   }
 
+  // If no user is authenticated, redirect to sign-in
+  if (!user) {
+    if (isMounted) {
+      router.push("/pages/signin");
+    }
+    return;
+  }
+
+  // If user exists, fetch orders
   const fetchOrders = async () => {
     try {
       const { data } = await api.get("/api/orders/my-orders");
@@ -71,18 +83,28 @@ const UserOrders: React.FC = () => {
       const sortedOrders = data.sort((a: Order, b: Order) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
-      setOrders(sortedOrders);
-      setLoading(false);
+      if (isMounted) {
+        setOrders(sortedOrders);
+        setLoading(false);
+      }
     } catch (err: any) {
-      setError(err.message || "Failed to fetch orders");
-      setLoading(false);
+      if (isMounted) {
+        setError(err.message || "Failed to fetch orders");
+        setLoading(false);
+      }
     }
   };
 
   fetchOrders();
   const refreshInterval = setInterval(fetchOrders, 60000); // Poll every 60 seconds
-  return () => clearInterval(refreshInterval); // Cleanup on unmount
-}, [user, router]);
+
+  return () => {
+    isMounted = false; // Prevent state updates after unmount
+    clearInterval(refreshInterval); // Cleanup interval
+  };
+}, [user, router]); // Keep user in deps since it’s from useAuth
+
+
   const toggleOrderExpansion = (orderId: string) => {
     setExpandedOrders(prev => {
       const newSet = new Set(prev);

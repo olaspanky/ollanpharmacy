@@ -33,13 +33,34 @@ const AddProductForm: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+    const [loading, setLoading] = useState(true);
+  
 
-  useEffect(() => {
-    if (!user || user.role !== "admin") {
+useEffect(() => {
+  let isMounted = true;
+
+  // Early return if user state is still loading (null or undefined)
+  if (user === null || user === undefined) {
+    // Optional: Set a loading state for UI feedback
+    setLoading(true); // Assuming you have a setLoading state
+    return;
+  }
+
+  // Redirect if no user or user is not an admin
+  if (!user || user.role !== "admin") {
+    if (isMounted) {
       router.push("/pages/signin");
     }
-  }, [user, router]);
+    return;
+  }
 
+  // If user is authenticated and an admin, proceed with any additional logic here
+  setLoading(false); // Clear loading state if needed
+
+  return () => {
+    isMounted = false; // Prevent state updates after unmount
+  };
+}, [user, router]);
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
