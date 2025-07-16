@@ -3,31 +3,67 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Drug, drugsData, categories } from "../lib/data";
+import api from "@/src/lib/api";
+
+// Define the Product interface based on the mongoose schema
+interface Product {
+  _id: string;
+  name: string;
+  price: number;
+  category: string;
+  image: string | null;
+  description?: string;
+  stock: number;
+}
 
 const ShopByCategory: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("All Category");
   const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<string[]>(["All Category"]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
-  const filteredDrugs = selectedCategory === "All Category"
-    ? drugsData
-    : drugsData.filter((drug) => drug.category === selectedCategory);
+  // Fetch products from the API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const { data } = await api.get("/api/products");
+        // Shuffle products and take the first 16
+        const shuffledProducts = data.sort(() => Math.random() - 0.5).slice(0, 16);
+        setProducts(shuffledProducts);
+
+        // Extract unique categories from products
+        const uniqueCategories = [
+          "All Category",
+          ...new Set(data.map((product: Product) => product.category).filter(Boolean)),
+        ];
+        setCategories(uniqueCategories);
+      } catch (err) {
+        setError("Failed to load products. Please try again later.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  // Filter products based on selected category
+  const filteredProducts = selectedCategory === "All Category"
+    ? products
+    : products.filter((product) => product.category === selectedCategory);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click from triggering navigation
-    setIsModalOpen(true);
+    router.push("/pages/shop"); // Navigate to /pages/shop
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
-
-  const handleProductClick = (e: React.MouseEvent) => {
-    // Only navigate if the click is not on the "Add to Cart" button
-    if (!(e.target as HTMLElement).closest("button")) {
-      router.push("/pages/shop");
-    }
+  const handleProductClick = () => {
+    router.push("/pages/shop"); // Navigate to /pages/shop
   };
 
   interface ComingSoonModalProps {
@@ -58,7 +94,7 @@ const ShopByCategory: React.FC = () => {
 
     return (
       <div className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50">
-        <div 
+        <div
           ref={modalRef}
           className="bg-white/90 backdrop-blur-md rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl animate-fadeIn border border-white/20"
         >
@@ -87,71 +123,87 @@ const ShopByCategory: React.FC = () => {
           Shop by Category
         </h2>
 
-        <div className="flex flex-wrap gap-2 mb-8 justify-center md:justify-start">
-          {categories.map((category) => (
-            <button
-              key={category}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
-                selectedCategory === category
-                  ? "bg-red-500 text-white shadow-md"
-                  : "bg-white text-gray-700 hover:bg-gray-100 shadow-sm"
-              }`}
-              onClick={() => setSelectedCategory(category)}
-              aria-label={`Filter by ${category}`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
+        {loading && <p className="text-center text-gray-600">Loading products...</p>}
+        {error && <p className="text-center text-red-500">{error}</p>}
 
-        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-          <h3 className="text-2xl font-bold text-gray-900">
-            {selectedCategory === "All Category" ? "All Products" : selectedCategory}
-          </h3>
-          <button 
-            onClick={() => router.push("/shop")}
-            className="text-red-500 font-semibold flex items-center hover:text-red-600 transition-colors"
-            aria-label="View all products"
-          >
-            View All <span className="ml-1">→</span>
-          </button>
-        </div>
+        {!loading && !error && (
+          <>
+            <div className="flex flex-wrap gap-2 mb-8 justify-center md:justify-start">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${
+                    selectedCategory === category
+                      ? "bg-red-500 text-white shadow-md"
+                      : "bg-white text-gray-700 hover:bg-gray-100 shadow-sm"
+                  }`}
+                  onClick={() => setSelectedCategory(category)}
+                  aria-label={`Filter by ${category}`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
-          {filteredDrugs.map((drug) => (
-            <div 
-              key={drug.id} 
-              className="bg-white rounded-2xl lg:p-6 p-2 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full cursor-pointer"
-              onClick={handleProductClick}
-            >
-              <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50">
-                <img
-                  src={drug.image}
-                  alt={drug.name}
-                  className="h-40 object-contain max-w-full"
-                  loading="lazy"
-                />
-              </div>
-              <div className="flex-grow">
-                <h4 className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2" title={drug.name}>
-                  {drug.name}
-                </h4>
-                <p className="text-red-500 font-bold mb-4">
-                  ₦{drug.price.toLocaleString()}
-                </p>
-              </div>
+            <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+              <h3 className="text-2xl font-bold text-gray-900">
+                {selectedCategory === "All Category" ? "All Products" : selectedCategory}
+              </h3>
               <button
-                onClick={handleProductClick}
-                className="w-full bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors duration-300 mt-auto"
-                aria-label={`Add ${drug.name} to cart`}
+                onClick={() => router.push("/pages/shop")}
+                className="text-red-500 font-semibold flex items-center hover:text-red-600 transition-colors"
+                aria-label="See more products"
               >
-                Shop now
+                See More <span className="ml-1">→</span>
               </button>
             </div>
-          ))}
-        </div>
 
-        <ComingSoonModal isOpen={isModalOpen} onClose={handleCloseModal} />
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
+              {filteredProducts.length > 0 ? (
+                filteredProducts.map((product) => (
+                  <div
+                    key={product._id}
+                    className="bg-white rounded-2xl lg:p-6 p-2 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full cursor-pointer"
+                    onClick={handleProductClick}
+                  >
+                    <div className="w-full h-48 rounded-lg mb-4 flex items-center justify-center bg-gray-50">
+                      <img
+                        src={product.image || "/default-image.jpg"}
+                        alt={product.name}
+                        className="h-40 object-contain max-w-full"
+                        loading="lazy"
+                      />
+                    </div>
+                    <div className="flex-grow">
+                      <h4
+                        className="text-[14px] lg:text-lg font-semibold mb-2 text-gray-900 line-clamp-2"
+                        title={product.name}
+                      >
+                        {product.name}
+                      </h4>
+                      <p className="text-red-500 font-bold mb-4">
+                        ₦{product.price.toLocaleString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleAddToCart}
+                      className="w-full bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors duration-300 mt-auto"
+                      aria-label={`Shop ${product.name}`}
+                    >
+                      Shop now
+                    </button>
+                  </div>
+                ))
+              ) : (
+                <p className="text-center text-gray-600 col-span-full">
+                  No products found for this category.
+                </p>
+              )}
+            </div>
+          </>
+        )}
+
+        <ComingSoonModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
       </div>
     </section>
   );
