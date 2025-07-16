@@ -612,66 +612,137 @@ useEffect(() => {
     if (!isQuantityModalOpen || !selectedProduct) return null;
 
     return (
-      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div ref={modalRef} className="bg-white rounded-xl max-w-md w-full p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Select Quantity</h2>
-            <button
-              onClick={() => {
-                setIsQuantityModalOpen(false);
+      // <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      //   <div ref={modalRef} className="bg-white rounded-xl max-w-md w-full p-6">
+      //     <div className="flex items-center justify-between mb-4">
+      //       <h2 className="text-xl font-bold text-gray-900">Select Quantity</h2>
+      //       <button
+      //         onClick={() => {
+                // setIsQuantityModalOpen(false);
+                // setSelectedProduct(null);
+                // setQuantity(1);
+      //         }}
+      //         className="p-2 hover:bg-gray-100 rounded-full active:scale-95 transition-transform"
+      //         aria-label="Close quantity modal"
+      //       >
+      //         <X size={20} className="text-red-500" />
+      //       </button>
+      //     </div>
+      //     <div className="flex items-center space-x-4 mb-4">
+      //       <img
+      //         src={`${selectedProduct.image}`}
+      //         alt={selectedProduct.name}
+      //         className="w-16 h-16 object-contain bg-gray-50 rounded"
+      //       />
+      //       <div>
+      //         <h3 className=" font-bold text-gray-900">{selectedProduct.name}</h3>
+      //         <h3 className="font-medium text-gray-900">{selectedProduct.description}</h3>
+      //         <p className="text-red-500 font-bold">₦{selectedProduct?.price.toLocaleString()}</p>
+      //       </div>
+      //     </div>
+      //     <div className="flex items-center space-x-4">
+      //       <button
+      //         onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
+      //         className="p-2 bg-white-500 border border-red-500 text-red-500 rounded-full hover:bg-red-600 hover:text-white active:scale-95 transition-transform"
+      //         aria-label="Decrease quantity"
+      //       >
+      //         <Minus size={16} />
+      //       </button>
+      //       <input
+      //         type="number"
+      //         value={quantity}
+      //         onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+      //         className="w-16 text-center border rounded-lg p-2 text-black"
+      //         min="1"
+      //         aria-label="Quantity"
+      //       />
+      //       <button
+      //         onClick={() => setQuantity((prev) => prev + 1)}
+      //         className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 active:scale-95 transition-transform"
+      //         aria-label="Increase quantity"
+      //       >
+      //         <Plus size={16} />
+      //       </button>
+      //     </div>
+      //     <button
+      //       onClick={handleAddToCart}
+      //       className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 active:scale-95 transition-all mt-4"
+      //       aria-label={`Add ${selectedProduct.name} to cart`}
+      //     >
+      //       Add to Cart
+      //     </button>
+      //   </div>
+      // </div>
+       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div ref={modalRef} className="w-full max-w-md rounded-xl bg-white p-6">
+        {/* Modal Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">Select Quantity</h2>
+          <button
+            onClick={() => {
+              setIsQuantityModalOpen(false);
                 setSelectedProduct(null);
                 setQuantity(1);
-              }}
-              className="p-2 hover:bg-gray-100 rounded-full active:scale-95 transition-transform"
-              aria-label="Close quantity modal"
-            >
-              <X size={20} className="text-red-500" />
-            </button>
-          </div>
-          <div className="flex items-center space-x-4 mb-4">
-            <img
-              src={`${selectedProduct.image}`}
-              alt={selectedProduct.name}
-              className="w-16 h-16 object-contain bg-gray-50 rounded"
-            />
-            <div>
-              <h3 className="font-medium text-gray-900">{selectedProduct.name}</h3>
-              <p className="text-red-500 font-bold">₦{selectedProduct?.price.toLocaleString()}</p>
-            </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={() => setQuantity((prev) => Math.max(1, prev - 1))}
-              className="p-2 bg-white-500 border border-red-500 text-red-500 rounded-full hover:bg-red-600 hover:text-white active:scale-95 transition-transform"
-              aria-label="Decrease quantity"
-            >
-              <Minus size={16} />
-            </button>
-            <input
-              type="number"
-              value={quantity}
-              onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-              className="w-16 text-center border rounded-lg p-2 text-black"
-              min="1"
-              aria-label="Quantity"
-            />
-            <button
-              onClick={() => setQuantity((prev) => prev + 1)}
-              className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600 active:scale-95 transition-transform"
-              aria-label="Increase quantity"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
-          <button
-            onClick={handleAddToCart}
-            className="w-full bg-red-500 text-white py-3 rounded-lg font-semibold hover:bg-red-600 active:scale-95 transition-all mt-4"
-            aria-label={`Add ${selectedProduct.name} to cart`}
+            }}
+            className="rounded-full p-2 hover:bg-gray-100"
+            aria-label="Close modal"
           >
-            Add to Cart
+            <X size={20} className="text-red-500" />
           </button>
         </div>
+
+        {/* Product Details */}
+        <div className="mb-4 flex items-center gap-4">
+          <img
+            src={selectedProduct.image}
+            alt={selectedProduct.name}
+            className="h-16 w-16 rounded object-contain"
+          />
+          <div>
+            <h3 className="font-semibold text-gray-900">{selectedProduct.name}</h3>
+            <p className="text-sm text-gray-600">{selectedProduct.description}</p>
+            <p className="font-semibold text-red-500">
+              ₦{selectedProduct.price.toLocaleString()}
+            </p>
+          </div>
+        </div>
+
+        {/* Quantity Controls */}
+        <div className="mb-4 flex items-center gap-4">
+          <button
+            onClick={() => setQuantity(Math.max(1, quantity - 1))}
+            className="rounded-full border border-red-500 p-2 text-red-500 hover:bg-red-500 hover:text-white"
+            aria-label="Decrease quantity"
+          >
+            <Minus size={16} />
+          </button>
+          <input
+            type="number"
+            value={quantity}
+            onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
+            className="w-16 rounded-lg border p-2 text-center text-gray-900"
+            min="1"
+            aria-label="Quantity input"
+          />
+          <button
+            onClick={() => setQuantity(quantity + 1)}
+            className="rounded-full bg-red-500 p-2 text-white hover:bg-red-600"
+            aria-label="Increase quantity"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
+
+        {/* Add to Cart Button */}
+        <button
+          onClick={handleAddToCart}
+          className="w-full rounded-lg bg-red-500 py-3 font-semibold text-white hover:bg-red-600"
+          aria-label={`Add ${selectedProduct.name} to cart`}
+        >
+          Add to Cart
+        </button>
       </div>
+    </div>
     );
   };
 
