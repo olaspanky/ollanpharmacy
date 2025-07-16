@@ -150,7 +150,7 @@ const AddProductForm: React.FC = () => {
             onChange={handleInputChange}
             required
             className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-black"
-            placeholder="Enter drug name"
+            placeholder="Enter Product name"
           />
         </div>
         <div>
@@ -161,7 +161,7 @@ const AddProductForm: React.FC = () => {
             onChange={handleInputChange}
             className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-black"
             rows={4}
-            placeholder="Enter drug description"
+            placeholder="Enter Product description"
           />
         </div>
         <div>
