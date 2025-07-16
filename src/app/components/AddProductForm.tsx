@@ -138,7 +138,6 @@ useEffect(() => {
       setFormData({ name: "", description: "", price: "", stock: "", category: "", image: null });
       setPreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
-      router.push("/pages/shop");
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : "Failed to create product";
       setError(errorMessage);
