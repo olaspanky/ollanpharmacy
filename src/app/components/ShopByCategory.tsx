@@ -4,6 +4,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/src/lib/api";
+import { AxiosResponse } from "axios"; // Import AxiosResponse if using Axios
 
 // Define the Product interface based on the mongoose schema
 interface Product {
@@ -30,7 +31,9 @@ const ShopByCategory: React.FC = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const { data } = await api.get("/api/products");
+        // Explicitly cast the response as AxiosResponse<Product[]> if generics are not supported
+        const response = await api.get("/api/products") as AxiosResponse<Product[]>;
+        const data = response.data;
         // Shuffle products and take the first 16
         const shuffledProducts = data.sort(() => Math.random() - 0.5).slice(0, 16);
         setProducts(shuffledProducts);
@@ -55,7 +58,7 @@ const ShopByCategory: React.FC = () => {
   // Filter products based on selected category
   const filteredProducts = selectedCategory === "All Category"
     ? products
-    : products.filter((product) => product.category === selectedCategory);
+    : products.filter((product: Product) => product.category === selectedCategory);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click from triggering navigation
@@ -99,7 +102,7 @@ const ShopByCategory: React.FC = () => {
           className="bg-white/90 backdrop-blur-md rounded-2xl p-8 max-w-md w-full mx-4 shadow-xl animate-fadeIn border border-white/20"
         >
           <div className="text-center">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Coming Soon!</h3>
+            <h3 className="text-2xl font-bold Text-gray-900 mb-4">Coming Soon!</h3>
             <p className="text-gray-600 mb-6">
               Our online shopping cart feature is under development. Stay tuned for updates and shop with us in-store at Ollan Pharmacy!
             </p>
@@ -160,7 +163,7 @@ const ShopByCategory: React.FC = () => {
 
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 lg:gap-6">
               {filteredProducts.length > 0 ? (
-                filteredProducts.map((product) => (
+                filteredProducts.map((product: Product) => (
                   <div
                     key={product._id}
                     className="bg-white rounded-2xl lg:p-6 p-2 shadow-sm hover:shadow-md transition-all duration-300 flex flex-col h-full cursor-pointer"
@@ -187,7 +190,7 @@ const ShopByCategory: React.FC = () => {
                     </div>
                     <button
                       onClick={handleAddToCart}
-                      className="w-full bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors duration-300 mt-auto"
+                      className="w-full bg-red-500 text-white py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors duration-200 mt-auto"
                       aria-label={`Shop ${product.name}`}
                     >
                       Shop now
