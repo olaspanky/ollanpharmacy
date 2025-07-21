@@ -70,6 +70,13 @@ export default function OrderCard({ order, onView, onAction, isRider }: OrderCar
             <p className="font-semibold text-slate-800">{order.customerInfo.pickupLocation}</p>
           </div>
         </div>
+         <div className="flex items-center space-x-3">
+          <MapPin className="w-4 h-4 text-slate-400" />
+          <div>
+            <p className="text-sm text-slate-500">Delivery Location</p>
+            <p className="font-semibold text-slate-800">{order.customerInfo.deliveryAddress}</p>
+          </div>
+        </div>
         <div className="flex items-center space-x-3">
           <DollarSign className="w-4 h-4 text-slate-400" />
           <div>

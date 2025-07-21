@@ -351,7 +351,7 @@ const getStatusIcon = (status: string, deliveryStatus: string) => {
                               <div>
                                 <p className="font-medium text-gray-900 text-sm">Delivery Address</p>
                                 <p className="text-gray-600 text-sm leading-relaxed">
-                                  {order.customerInfo.address}<br />
+                                  {order.customerInfo.pickupLocation}<br />
                                   {order.customerInfo.city}, {order.customerInfo.state}
                                 </p>
                               </div>

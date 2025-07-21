@@ -26,6 +26,8 @@ export default function OrderModal({ order, onClose, riders = [], onAssignRider,
     }
   };
 
+  console.log('Order details:', order);
+
   return (
     <div className="fixed w-7xl text-black inset-0 bg-black bg-opacity-50 flex items-center justify-center">
       <div className="bg-white p-6 rounded-lg max-w-lg w-full">
@@ -35,6 +37,7 @@ export default function OrderModal({ order, onClose, riders = [], onAssignRider,
         <p><strong>Email:</strong> {order.customerInfo.email}</p>
         <p><strong>Phone:</strong> {order.customerInfo.phone}</p>
         <p><strong>Location:</strong> {order.customerInfo.pickupLocation}</p>
+        <p><strong>Delivery Location:</strong> {order.customerInfo.deliveryAddress}</p>
         <p><strong>Delivery Option:</strong> {order.customerInfo.deliveryOption}</p>
         <p><strong>Estimated Delivery:</strong> {order.customerInfo.estimatedDelivery}</p>
         <p><strong>Status:</strong> {order.status.charAt(0).toUpperCase() + order.status.slice(1)}</p>

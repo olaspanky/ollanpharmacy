@@ -134,15 +134,15 @@ const PharmacyApp: React.FC = () => {
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
-    const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    name: user?.name || "nil",
-    email: user?.email || "nil",
-    phone: "nil",
+  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+    name: user?.name || "",
+    email: user?.email || "",
+    phone: "",
     prescription: null,
-    deliveryOption: "nil",
-    pickupLocation: "nil",
-    deliveryAddress: "nil",
-    timeSlot: "nil",
+    deliveryOption: "",
+    pickupLocation: "",
+    deliveryAddress: "",
+    timeSlot: "",
     isUIAddress: false,
   });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);

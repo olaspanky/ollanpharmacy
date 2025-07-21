@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect, useState } from "react";
-import { X, User, Phone, Home, Upload, UploadCloud, CreditCard } from "lucide-react";
+import { X, User, Phone, Home, CreditCard } from "lucide-react";
 
 interface CustomerInfo {
   name: string;
@@ -26,7 +26,7 @@ interface CheckoutModalProps {
   estimatedDelivery: string;
   isProcessing: boolean;
   isPaystackLoaded: boolean;
-  initializePayment: (customerInfo: CustomerInfo) => void; // Updated to accept customerInfo
+  initializePayment: (customerInfo: CustomerInfo) => void;
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -74,22 +74,18 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const minutes = now.getMinutes();
     const currentTimeInMinutes = hours * 60 + minutes;
 
-    // Define time slots in minutes since midnight
     const slots = [
-      { time: "12 PM", minutes: 12 * 60 }, // 12:00 PM
-      { time: "4 PM", minutes: 16 * 60 }, // 4:00 PM
-      { time: "9 PM", minutes: 21 * 60 }, // 9:00 PM
-      { time: "6 AM", minutes: 6 * 60 }, // 6:00 AM (next day)
+      { time: "12 PM", minutes: 12 * 60 },
+      { time: "4 PM", minutes: 16 * 60 },
+      { time: "9 PM", minutes: 21 * 60 },
+      { time: "6 AM", minutes: 6 * 60 },
     ];
 
-    // Apply 30-minute buffer
     for (const slot of slots) {
       if (currentTimeInMinutes < slot.minutes - 30) {
         return slot.time as "12 PM" | "4 PM" | "9 PM" | "6 AM";
       }
     }
-
-    // If after 8:30 PM (21:00 - 30 min), roll over to 6 AM next day
     return "6 AM";
   };
 
@@ -101,6 +97,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   }, [customerInfo.deliveryOption, customerInfo.timeSlot, setCustomerInfo]);
 
+  // Handle click outside to close modal
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -123,62 +120,87 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     };
   }, [isOpen, setIsOpen]);
 
+  // Handle delivery area change
   const handleDeliveryAreaChange = (area: string) => {
     const isUIAddress = area === "University of Ibadan" || area === "UCH";
     setCustomerInfo({
       ...customerInfo,
-      deliveryAddress: area || "nil",
+      deliveryAddress: area || "",
       isUIAddress,
-      deliveryOption: isUIAddress ? customerInfo.deliveryOption : "express",
-      pickupLocation: "nil",
-      timeSlot: isUIAddress ? customerInfo.timeSlot : "nil",
+      deliveryOption: isUIAddress ? customerInfo.deliveryOption || "express" : "express",
+      pickupLocation: isUIAddress && (customerInfo.deliveryOption === "pickup" || customerInfo.deliveryOption === "timeframe") ? customerInfo.pickupLocation : area || "",
+      timeSlot: isUIAddress && customerInfo.deliveryOption === "timeframe" ? customerInfo.timeSlot || getNextDeliverySlot() : "nil",
     });
     setAddressError("");
   };
 
+  // Handle pickup location change
+  const handlePickupLocationChange = (location: string) => {
+    const concatenatedLocation = customerInfo.deliveryAddress && location ? `${customerInfo.deliveryAddress} - ${location}` : location || "";
+    setCustomerInfo({
+      ...customerInfo,
+      pickupLocation: concatenatedLocation,
+    });
+  };
+
+  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Sanitize all fields to ensure no empty values
+    // Validate required fields
+    const errors: string[] = [];
+    if (!customerInfo.name.trim()) errors.push("Full Name is required");
+    if (!customerInfo.email.trim()) errors.push("Email is required");
+    if (!customerInfo.phone.trim()) errors.push("Phone Number is required");
+    if (!customerInfo.deliveryOption || customerInfo.deliveryOption === "nil") {
+      errors.push("Delivery Option is required");
+    }
+    if (!customerInfo.deliveryAddress && customerInfo.deliveryOption !== "pickup") {
+      errors.push("Delivery Area is required for non-pickup options");
+    }
+    if (customerInfo.deliveryOption === "pickup" && (!customerInfo.pickupLocation || customerInfo.pickupLocation === "nil")) {
+      errors.push("Pickup Location is required for pickup option");
+    }
+    if (customerInfo.deliveryOption === "timeframe" && (!customerInfo.timeSlot || customerInfo.timeSlot === "nil")) {
+      errors.push("Time Slot is required for timeframe delivery");
+    }
+    if ((customerInfo.deliveryOption === "pickup" || (customerInfo.isUIAddress && customerInfo.deliveryOption === "timeframe")) && !customerInfo.pickupLocation.includes(customerInfo.deliveryAddress)) {
+      errors.push("Pickup Location must include the selected Delivery Area");
+    }
+
+    if (errors.length > 0) {
+      alert(`Please fix the following errors:\n${errors.join("\n")}`);
+      return;
+    }
+
+    // Sanitize fields, setting deliveryAddress to "nil" and using pickupLocation for concatenated data
     const sanitizedCustomerInfo: CustomerInfo = {
-      name: customerInfo.name || "nil",
-      email: customerInfo.email || "nil",
-      phone: customerInfo.phone || "nil",
+      name: customerInfo.name.trim(),
+      email: customerInfo.email.trim(),
+      phone: customerInfo.phone.trim(),
       prescription: customerInfo.prescription || null,
-      deliveryOption: customerInfo.deliveryOption || "nil",
-      pickupLocation: customerInfo.pickupLocation || "nil",
-      deliveryAddress: customerInfo.deliveryAddress || "nil",
-      timeSlot: customerInfo.timeSlot || "nil",
+      deliveryOption: customerInfo.deliveryOption,
+      pickupLocation:
+        customerInfo.deliveryOption === "pickup" || (customerInfo.isUIAddress && customerInfo.deliveryOption === "timeframe")
+          ? customerInfo.pickupLocation // Already concatenated in handlePickupLocationChange
+          : customerInfo.deliveryAddress.trim(), // Use deliveryAddress for express or non-UI/UCH
+      deliveryAddress: "nil", // Always "nil" as pickupLocation carries the address info
+      timeSlot: customerInfo.deliveryOption === "timeframe" && customerInfo.isUIAddress ? customerInfo.timeSlot : "nil",
       isUIAddress: customerInfo.isUIAddress,
     };
 
-    // Validate required fields
-    if (
-      sanitizedCustomerInfo.name !== "nil" &&
-      sanitizedCustomerInfo.email !== "nil" &&
-      sanitizedCustomerInfo.phone !== "nil" &&
-      sanitizedCustomerInfo.deliveryOption !== "nil" &&
-      (sanitizedCustomerInfo.deliveryOption === "pickup"
-        ? sanitizedCustomerInfo.pickupLocation !== "nil"
-        : sanitizedCustomerInfo.deliveryAddress !== "nil") &&
-      (sanitizedCustomerInfo.deliveryOption === "timeframe" ? sanitizedCustomerInfo.timeSlot !== "nil" : true)
-    ) {
-      // Log sanitized data for debugging
-      console.log("Submitting Customer Info:", {
-        ...sanitizedCustomerInfo,
-        isUIAddress: sanitizedCustomerInfo.isUIAddress ? "true" : "false",
-      });
+    // Log for debugging
+    console.log("Submitting Customer Info:", {
+      ...sanitizedCustomerInfo,
+      isUIAddress: sanitizedCustomerInfo.isUIAddress ? "true" : "false",
+    });
 
-      // Update state for consistency
-      setCustomerInfo(sanitizedCustomerInfo);
-
-      // Pass sanitized data directly to initializePayment
-      initializePayment(sanitizedCustomerInfo);
-    } else {
-      alert("Please fill in all required fields, including delivery option, area or pickup location, and time slot (if applicable).");
-    }
+    // Update state and proceed to payment
+    setCustomerInfo(sanitizedCustomerInfo);
+    initializePayment(sanitizedCustomerInfo);
   };
 
+  // Handle prescription file upload
   const handlePrescriptionUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -231,8 +253,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="text"
                   required
                   value={customerInfo.name}
-                  readOnly
-                  className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 bg-gray-100 cursor-not-allowed"
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
+                  placeholder="Enter your full name"
                   aria-label="Full name"
                 />
               </div>
@@ -246,8 +269,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="email"
                   required
                   value={customerInfo.email}
-                  readOnly
-                  className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 bg-gray-100 cursor-not-allowed"
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
+                  placeholder="Enter your email address"
                   aria-label="Email address"
                 />
               </div>
@@ -261,11 +285,28 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="tel"
                   required
                   value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value || "nil" })}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
                   placeholder="Enter your phone number"
                   aria-label="Phone number"
                 />
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-xl">
+                <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
+                  <Home size={18} className="mr-2 text-red-500" />
+                  Prescription (Optional)
+                </label>
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,application/pdf"
+                  onChange={handlePrescriptionUpload}
+                  className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 bg-white"
+                  aria-label="Prescription upload"
+                />
+                {customerInfo.prescription && (
+                  <p className="text-sm text-gray-600 mt-2">File: {customerInfo.prescription.name}</p>
+                )}
               </div>
             </div>
 
@@ -276,10 +317,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   Delivery Area *
                 </label>
                 <select
-                  required={customerInfo.deliveryOption !== "pickup"}
+                  required
                   value={customerInfo.deliveryAddress}
                   onChange={(e) => handleDeliveryAreaChange(e.target.value)}
-                  disabled={customerInfo.deliveryOption === "pickup"}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
                   aria-label="Delivery area"
                 >
@@ -292,7 +332,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </option>
                   ))}
                 </select>
-                {customerInfo.deliveryOption === "express" && customerInfo.deliveryAddress && customerInfo.deliveryAddress !== "nil" && (
+                {customerInfo.deliveryOption === "express" && customerInfo.deliveryAddress && (
                   <p className="text-sm text-gray-600 mt-2">
                     Our rider will contact you to confirm your exact location in {customerInfo.deliveryAddress}.
                   </p>
@@ -316,9 +356,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         setCustomerInfo({
                           ...customerInfo,
                           deliveryOption: e.target.value as "express",
-                          pickupLocation: "nil",
+                          pickupLocation: customerInfo.deliveryAddress || "",
                           timeSlot: "nil",
-                          deliveryAddress: customerInfo.deliveryAddress || "nil",
                         })
                       }
                       className="h-4 w-4 text-red-600 focus:ring-red-500"
@@ -342,8 +381,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                             setCustomerInfo({
                               ...customerInfo,
                               deliveryOption: e.target.value as "timeframe",
-                              pickupLocation: "nil",
-                              deliveryAddress: customerInfo.deliveryAddress || "nil",
+                              pickupLocation: customerInfo.deliveryAddress || "",
                               timeSlot: getNextDeliverySlot(),
                             })
                           }
@@ -367,8 +405,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                               ...customerInfo,
                               deliveryOption: e.target.value as "pickup",
                               timeSlot: "nil",
-                              deliveryAddress: "nil",
-                              pickupLocation: "nil",
+                              pickupLocation: customerInfo.isUIAddress ? customerInfo.pickupLocation : customerInfo.deliveryAddress || storeLocation,
                             })
                           }
                           className="h-4 w-4 text-red-600 focus:ring-red-500"
@@ -427,8 +464,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </label>
                   <select
                     required
-                    value={customerInfo.pickupLocation}
-                    onChange={(e) => setCustomerInfo({ ...customerInfo, pickupLocation: e.target.value || "nil" })}
+                    value={customerInfo.pickupLocation.includes(customerInfo.deliveryAddress) ? customerInfo.pickupLocation.split(" - ")[1] || customerInfo.pickupLocation : customerInfo.pickupLocation}
+                    onChange={(e) => handlePickupLocationChange(e.target.value)}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
                     aria-label={customerInfo.deliveryOption === "pickup" ? "Pickup location" : "Dropoff location"}
                   >
