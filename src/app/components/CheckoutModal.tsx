@@ -3,6 +3,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { X, User, Phone, Home, CreditCard } from "lucide-react";
 
+// Align CustomerInfo interface with parent's interface
 interface CustomerInfo {
   name: string;
   email: string;
@@ -19,7 +20,7 @@ interface CheckoutModalProps {
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
   customerInfo: CustomerInfo;
-  setCustomerInfo: (info: CustomerInfo) => void;
+  setCustomerInfo: React.Dispatch<React.SetStateAction<CustomerInfo>>;
   cartTotal: number;
   deliveryFee: number;
   grandTotal: number;
@@ -134,9 +135,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     setAddressError("");
   };
 
-  // Handle pickup location change
+  // Handle pickup location change with concatenation
   const handlePickupLocationChange = (location: string) => {
-    const concatenatedLocation = customerInfo.deliveryAddress && location ? `${customerInfo.deliveryAddress} - ${location}` : location || "";
+    const concatenatedLocation = customerInfo.deliveryAddress && location && (customerInfo.deliveryOption === "pickup" || customerInfo.deliveryOption === "timeframe")
+      ? `${customerInfo.deliveryAddress} - ${location}`
+      : location || customerInfo.deliveryAddress || "";
     setCustomerInfo({
       ...customerInfo,
       pickupLocation: concatenatedLocation,
@@ -164,7 +167,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if (customerInfo.deliveryOption === "timeframe" && (!customerInfo.timeSlot || customerInfo.timeSlot === "nil")) {
       errors.push("Time Slot is required for timeframe delivery");
     }
-    if ((customerInfo.deliveryOption === "pickup" || (customerInfo.isUIAddress && customerInfo.deliveryOption === "timeframe")) && !customerInfo.pickupLocation.includes(customerInfo.deliveryAddress)) {
+    if ((customerInfo.deliveryOption === "pickup" || (customerInfo.isUIAddress && customerInfo.deliveryOption === "timeframe")) && customerInfo.deliveryAddress && !customerInfo.pickupLocation.includes(customerInfo.deliveryAddress)) {
       errors.push("Pickup Location must include the selected Delivery Area");
     }
 
@@ -182,9 +185,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       deliveryOption: customerInfo.deliveryOption,
       pickupLocation:
         customerInfo.deliveryOption === "pickup" || (customerInfo.isUIAddress && customerInfo.deliveryOption === "timeframe")
-          ? customerInfo.pickupLocation // Already concatenated in handlePickupLocationChange
+          ? customerInfo.pickupLocation // Already concatenated
           : customerInfo.deliveryAddress.trim(), // Use deliveryAddress for express or non-UI/UCH
-      deliveryAddress: "nil", // Always "nil" as pickupLocation carries the address info
+      deliveryAddress: "nil", // Always "nil" as pickupLocation carries address info
       timeSlot: customerInfo.deliveryOption === "timeframe" && customerInfo.isUIAddress ? customerInfo.timeSlot : "nil",
       isUIAddress: customerInfo.isUIAddress,
     };

@@ -134,9 +134,9 @@ const PharmacyApp: React.FC = () => {
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    name: user?.name || "",
-    email: user?.email || "",
+const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+    name: "",
+    email: "",
     phone: "",
     prescription: null,
     deliveryOption: "",
