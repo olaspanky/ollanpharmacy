@@ -8,11 +8,11 @@ interface CustomerInfo {
   email: string;
   phone: string;
   prescription?: File | null;
-  deliveryOption: "express" | "timeframe" | "pickup" | "";
-  pickupLocation: string; // Now a string to accommodate all pickup locations
-  deliveryAddress: string; // Stores selected area (e.g., "Bodija", "University of Ibadan")
-  timeSlot: "12 PM" | "4 PM" | "9 PM" | "6 AM" | "";
-  isUIAddress: boolean; // True for University of Ibadan and UCH
+  deliveryOption: "express" | "timeframe" | "pickup" | "" | "nil";
+  pickupLocation: string;
+  deliveryAddress: string;
+  timeSlot: "12 PM" | "4 PM" | "9 PM" | "6 AM" | "" | "nil";
+  isUIAddress: boolean;
 }
 
 interface CheckoutModalProps {
@@ -26,7 +26,7 @@ interface CheckoutModalProps {
   estimatedDelivery: string;
   isProcessing: boolean;
   isPaystackLoaded: boolean;
-  initializePayment: () => void;
+  initializePayment: (customerInfo: CustomerInfo) => void; // Updated to accept customerInfo
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -67,6 +67,40 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const uchPickupLocations = ["ABH", "First Gate", "Second Gate", "UCH School"];
   const storeLocation = "Store (1 Fadare Close, Iwo Road)";
 
+  // Function to determine the next delivery slot based on current time
+  const getNextDeliverySlot = (): "12 PM" | "4 PM" | "9 PM" | "6 AM" => {
+    const now = new Date();
+    const hours = now.getHours();
+    const minutes = now.getMinutes();
+    const currentTimeInMinutes = hours * 60 + minutes;
+
+    // Define time slots in minutes since midnight
+    const slots = [
+      { time: "12 PM", minutes: 12 * 60 }, // 12:00 PM
+      { time: "4 PM", minutes: 16 * 60 }, // 4:00 PM
+      { time: "9 PM", minutes: 21 * 60 }, // 9:00 PM
+      { time: "6 AM", minutes: 6 * 60 }, // 6:00 AM (next day)
+    ];
+
+    // Apply 30-minute buffer
+    for (const slot of slots) {
+      if (currentTimeInMinutes < slot.minutes - 30) {
+        return slot.time as "12 PM" | "4 PM" | "9 PM" | "6 AM";
+      }
+    }
+
+    // If after 8:30 PM (21:00 - 30 min), roll over to 6 AM next day
+    return "6 AM";
+  };
+
+  // Automatically set time slot for timeframe delivery
+  useEffect(() => {
+    if (customerInfo.deliveryOption === "timeframe" && !customerInfo.timeSlot) {
+      const nextSlot = getNextDeliverySlot();
+      setCustomerInfo({ ...customerInfo, timeSlot: nextSlot });
+    }
+  }, [customerInfo.deliveryOption, customerInfo.timeSlot, setCustomerInfo]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -93,26 +127,53 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     const isUIAddress = area === "University of Ibadan" || area === "UCH";
     setCustomerInfo({
       ...customerInfo,
-      deliveryAddress: area,
+      deliveryAddress: area || "nil",
       isUIAddress,
-      deliveryOption: isUIAddress ? customerInfo.deliveryOption : "express", // Non-UI/UCH areas default to express
-      pickupLocation: "", // Reset pickup location when area changes
-      timeSlot: isUIAddress ? customerInfo.timeSlot : "", // Reset time slot for non-UI/UCH
+      deliveryOption: isUIAddress ? customerInfo.deliveryOption : "express",
+      pickupLocation: "nil",
+      timeSlot: isUIAddress ? customerInfo.timeSlot : "nil",
     });
     setAddressError("");
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Sanitize all fields to ensure no empty values
+    const sanitizedCustomerInfo: CustomerInfo = {
+      name: customerInfo.name || "nil",
+      email: customerInfo.email || "nil",
+      phone: customerInfo.phone || "nil",
+      prescription: customerInfo.prescription || null,
+      deliveryOption: customerInfo.deliveryOption || "nil",
+      pickupLocation: customerInfo.pickupLocation || "nil",
+      deliveryAddress: customerInfo.deliveryAddress || "nil",
+      timeSlot: customerInfo.timeSlot || "nil",
+      isUIAddress: customerInfo.isUIAddress,
+    };
+
+    // Validate required fields
     if (
-      customerInfo.name &&
-      customerInfo.email &&
-      customerInfo.phone &&
-      customerInfo.deliveryOption &&
-      (customerInfo.deliveryOption === "pickup" ? customerInfo.pickupLocation : customerInfo.deliveryAddress) &&
-      (customerInfo.deliveryOption === "timeframe" ? customerInfo.timeSlot : true)
+      sanitizedCustomerInfo.name !== "nil" &&
+      sanitizedCustomerInfo.email !== "nil" &&
+      sanitizedCustomerInfo.phone !== "nil" &&
+      sanitizedCustomerInfo.deliveryOption !== "nil" &&
+      (sanitizedCustomerInfo.deliveryOption === "pickup"
+        ? sanitizedCustomerInfo.pickupLocation !== "nil"
+        : sanitizedCustomerInfo.deliveryAddress !== "nil") &&
+      (sanitizedCustomerInfo.deliveryOption === "timeframe" ? sanitizedCustomerInfo.timeSlot !== "nil" : true)
     ) {
-      initializePayment();
+      // Log sanitized data for debugging
+      console.log("Submitting Customer Info:", {
+        ...sanitizedCustomerInfo,
+        isUIAddress: sanitizedCustomerInfo.isUIAddress ? "true" : "false",
+      });
+
+      // Update state for consistency
+      setCustomerInfo(sanitizedCustomerInfo);
+
+      // Pass sanitized data directly to initializePayment
+      initializePayment(sanitizedCustomerInfo);
     } else {
       alert("Please fill in all required fields, including delivery option, area or pickup location, and time slot (if applicable).");
     }
@@ -200,7 +261,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   type="tel"
                   required
                   value={customerInfo.phone}
-                  onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value || "nil" })}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
                   placeholder="Enter your phone number"
                   aria-label="Phone number"
@@ -231,7 +292,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </option>
                   ))}
                 </select>
-                {customerInfo.deliveryOption === "express" && customerInfo.deliveryAddress && (
+                {customerInfo.deliveryOption === "express" && customerInfo.deliveryAddress && customerInfo.deliveryAddress !== "nil" && (
                   <p className="text-sm text-gray-600 mt-2">
                     Our rider will contact you to confirm your exact location in {customerInfo.deliveryAddress}.
                   </p>
@@ -255,9 +316,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         setCustomerInfo({
                           ...customerInfo,
                           deliveryOption: e.target.value as "express",
-                          pickupLocation: "",
-                          timeSlot: "",
-                          deliveryAddress: customerInfo.deliveryAddress || "",
+                          pickupLocation: "nil",
+                          timeSlot: "nil",
+                          deliveryAddress: customerInfo.deliveryAddress || "nil",
                         })
                       }
                       className="h-4 w-4 text-red-600 focus:ring-red-500"
@@ -281,8 +342,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                             setCustomerInfo({
                               ...customerInfo,
                               deliveryOption: e.target.value as "timeframe",
-                              pickupLocation: "",
-                              deliveryAddress: customerInfo.deliveryAddress || "",
+                              pickupLocation: "nil",
+                              deliveryAddress: customerInfo.deliveryAddress || "nil",
+                              timeSlot: getNextDeliverySlot(),
                             })
                           }
                           className="h-4 w-4 text-red-600 focus:ring-red-500"
@@ -304,8 +366,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                             setCustomerInfo({
                               ...customerInfo,
                               deliveryOption: e.target.value as "pickup",
-                              timeSlot: "",
-                              deliveryAddress: "",
+                              timeSlot: "nil",
+                              deliveryAddress: "nil",
+                              pickupLocation: "nil",
                             })
                           }
                           className="h-4 w-4 text-red-600 focus:ring-red-500"
@@ -319,7 +382,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </>
                   )}
                 </div>
-                {estimatedDelivery && customerInfo.deliveryOption !== "pickup" && (
+                {estimatedDelivery && customerInfo.deliveryOption !== "pickup" && customerInfo.deliveryOption !== "nil" && (
                   <p className="text-sm text-gray-600 mt-3 bg-red-50 p-2 rounded-md">
                     <span className="font-medium">Estimated Delivery:</span> {estimatedDelivery}
                   </p>
@@ -338,7 +401,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     onChange={(e) =>
                       setCustomerInfo({
                         ...customerInfo,
-                        timeSlot: e.target.value as "12 PM" | "4 PM" | "9 PM" | "6 AM",
+                        timeSlot: e.target.value as "12 PM" | "4 PM" | "9 PM" | "6 AM" | "nil",
                       })
                     }
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
@@ -365,7 +428,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   <select
                     required
                     value={customerInfo.pickupLocation}
-                    onChange={(e) => setCustomerInfo({ ...customerInfo, pickupLocation: e.target.value })}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, pickupLocation: e.target.value || "nil" })}
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
                     aria-label={customerInfo.deliveryOption === "pickup" ? "Pickup location" : "Dropoff location"}
                   >
@@ -388,36 +451,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </select>
                 </div>
               )}
-
-              {/* <div className="bg-gray-50 p-4 rounded-xl">
-                <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                  <Upload size={18} className="mr-2 text-red-500" />
-                  Upload Prescription (Optional)
-                </label>
-                <div className="flex items-center justify-center w-full">
-                  <label className="flex flex-col w-full border-2 border-dashed hover:border-red-300 rounded-lg cursor-pointer">
-                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                      <UploadCloud className="w-8 h-8 text-gray-400" />
-                      <p className="text-sm text-gray-500 mt-2">
-                        <span className="font-semibold">Click to upload</span> or drag and drop
-                      </p>
-                      <p className="text-xs text-gray-400">JPEG, PNG, or PDF (Max 5MB)</p>
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,application/pdf"
-                      onChange={handlePrescriptionUpload}
-                      className="hidden"
-                      aria-label="Upload prescription"
-                    />
-                  </label>
-                </div>
-                {customerInfo.prescription && (
-                  <p className="text-sm text-gray-600 mt-3 bg-green-50 p-2 rounded-md">
-                    <span className="font-medium">Uploaded:</span> {customerInfo.prescription.name}
-                  </p>
-                )}
-              </div> */}
             </div>
           </div>
 
@@ -430,7 +463,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="flex justify-between text-black">
                 <span>Delivery Fee:</span>
                 <span>
-                  {customerInfo.deliveryOption
+                  {customerInfo.deliveryOption && customerInfo.deliveryOption !== "nil"
                     ? customerInfo.deliveryOption === "express"
                       ? "₦1,500"
                       : customerInfo.deliveryOption === "pickup"

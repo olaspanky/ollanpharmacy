@@ -106,11 +106,11 @@ interface CustomerInfo {
   email: string;
   phone: string;
   prescription?: File | null;
-  deliveryOption: "express" | "timeframe" | "pickup" | "";
-  pickupLocation: string; // Now a string to accommodate all pickup locations
-  deliveryAddress: string; // Stores selected area (e.g., "Bodija", "University of Ibadan")
-  timeSlot: "12 PM" | "4 PM" | "9 PM" | "6 AM" | "";
-  isUIAddress: boolean; // True for University of Ibadan and UCH
+  deliveryOption: "express" | "timeframe" | "pickup" | "" | "nil";
+  pickupLocation: string;
+  deliveryAddress: string;
+  timeSlot: "12 PM" | "4 PM" | "9 PM" | "6 AM" | "" | "nil";
+  isUIAddress: boolean;
 }
 
  const supermarketCategories = ["All Products", "Baby Care", "Groceries", "Beverages", "Household"];
@@ -134,15 +134,15 @@ const PharmacyApp: React.FC = () => {
   const [isQuantityModalOpen, setIsQuantityModalOpen] = useState<boolean>(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState<number>(1);
-  const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: "",
+    const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
+    name: user?.name || "nil",
+    email: user?.email || "nil",
+    phone: "nil",
     prescription: null,
-    deliveryOption: "",
-    pickupLocation: "",
-    deliveryAddress: "",
-    timeSlot: "",
+    deliveryOption: "nil",
+    pickupLocation: "nil",
+    deliveryAddress: "nil",
+    timeSlot: "nil",
     isUIAddress: false,
   });
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
