@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/src/lib/api";
 import { AxiosResponse } from "axios"; // Import AxiosResponse if using Axios
-
+import SkeletonLoader from "./SkeletonLoader"; // Import the SkeletonLoader component
 // Define the Product interface based on the mongoose schema
 interface Product {
   _id: string;
@@ -126,7 +126,7 @@ const ShopByCategory: React.FC = () => {
           Shop by Category
         </h2>
 
-        {loading && <p className="text-center text-gray-600">Loading products...</p>}
+        {loading && <SkeletonLoader />}
         {error && <p className="text-center text-red-500">{error}</p>}
 
         {!loading && !error && (
