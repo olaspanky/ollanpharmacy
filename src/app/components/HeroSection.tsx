@@ -153,7 +153,7 @@ const PharmacyWebsite = () => {
                 </button>
               </div>
 
-              <div>
+              {/* <div>
                 <p className="text-gray-600 mb-3">Download our app</p>
                 <div className="flex space-x-3">
                   <Image
@@ -167,7 +167,7 @@ const PharmacyWebsite = () => {
                     className="cursor-pointer"
                   />
                 </div>
-              </div>
+              </div> */}
             </div>
 
             {/* Right Image */}
