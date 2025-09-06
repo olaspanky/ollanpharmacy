@@ -1,40 +1,61 @@
 'use client';
 
+import { useState } from 'react';
 import { Order } from '../../types/order';
-import { Package, Eye, Check, X, MapPin, DollarSign, Truck, Users } from 'lucide-react';
+import { Package, Eye, Check, X, MapPin, DollarSign, Truck, Users, CheckCircle2 } from 'lucide-react';
 
 interface OrderCardProps {
   order: Order;
   onView: () => void;
-  onAction: (orderId: string, action: 'accept' | 'reject' | 'en_route' | 'delivered' | 'assign-rider', riderId?: string) => Promise<void>;
+  onAction: (
+    orderId: string,
+    action: 'accept' | 'reject' | 'en_route' | 'delivered' | 'assign-rider' | 'verify-payment',
+    riderId?: string,
+    paymentDetails?: string
+  ) => Promise<void>;
   isRider: boolean;
+  actionLoading: { [key: string]: boolean };
 }
 
-export default function OrderCard({ order, onView, onAction, isRider }: OrderCardProps) {
+export default function OrderCard({ order, onView, onAction, isRider, actionLoading }: OrderCardProps) {
+  const [paymentDetails, setPaymentDetails] = useState('');
+
   const getStatusColor = (status: string | undefined) => {
-  switch (status) {
-    // Admin statuses
-    case 'pending':
-      return 'bg-amber-100 text-amber-700 border-amber-200';
-    case 'processing':
-      return 'bg-blue-100 text-blue-700 border-blue-200';
-    case 'accepted':
-      return 'bg-emerald-100 text-emerald-700 border-emerald-200';
-    case 'rejected':
-      return 'bg-red-100 text-red-700 border-red-200';
-    // Rider statuses
-    case 'assigned':
-      return 'bg-yellow-100 text-yellow-700 border-yellow-200';
-    case 'en_route':
-      return 'bg-blue-100 text-blue-700 border-blue-200';
-    case 'delivered':
-      return 'bg-green-100 text-green-700 border-green-200';
-    default:
-      return 'bg-slate-100 text-slate-700 border-slate-200';
-  }
-};
+    switch (status) {
+      // Admin statuses
+      case 'pending':
+        return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'processing':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'accepted':
+        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+      case 'rejected':
+        return 'bg-red-100 text-red-700 border-red-200';
+      // Rider statuses
+      case 'assigned':
+        return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+      case 'en_route':
+        return 'bg-blue-100 text-blue-700 border-blue-200';
+      case 'delivered':
+        return 'bg-green-100 text-green-700 border-green-200';
+      default:
+        return 'bg-slate-100 text-slate-700 border-slate-200';
+    }
+  };
 
   const currentStatus = isRider ? (order.deliveryStatus || 'assigned') : order.status;
+
+  const handleVerifyPayment = async () => {
+    if (!paymentDetails.trim()) {
+      alert('Please enter payment details');
+      return;
+    }
+    await onAction(order._id, 'verify-payment', undefined, paymentDetails);
+    setPaymentDetails('');
+  };
+
+  const actionKey = (action: string, riderId?: string) =>
+    `${order._id}-${action}${riderId ? `-${riderId}` : ''}${action === 'verify-payment' ? '-verify' : ''}`;
 
   return (
     <div className="bg-white rounded-2xl p-6 shadow-lg border border-slate-200 hover:shadow-xl transition-all duration-300">
@@ -85,11 +106,11 @@ export default function OrderCard({ order, onView, onAction, isRider }: OrderCar
               <p className="font-semibold text-slate-800">{order.rider.name}</p>
             </div>
           </div>
-        ): (
+        ) : (
           <div>
             <p className="text-sm text-slate-500">Assign rider: no rider assigned</p>
-            </div>
-        ) }
+          </div>
+        )}
       </div>
 
       {/* Action Buttons */}
@@ -106,35 +127,57 @@ export default function OrderCard({ order, onView, onAction, isRider }: OrderCar
             <button
               onClick={() => onAction(order._id, 'en_route')}
               className="flex items-center space-x-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={order.deliveryStatus === 'en_route'}
+              disabled={order.deliveryStatus === 'en_route' || actionLoading[actionKey('en_route')]}
             >
               <Truck className="w-4 h-4" />
-              <span>En Route</span>
+              <span>{actionLoading[actionKey('en_route')] ? 'Processing...' : 'En Route'}</span>
             </button>
             <button
               onClick={() => onAction(order._id, 'delivered')}
-              className="flex items-center space-x-2 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={actionLoading[actionKey('delivered')]}
             >
               <Check className="w-4 h-4" />
-              <span>Delivered</span>
+              <span>{actionLoading[actionKey('delivered')] ? 'Processing...' : 'Delivered'}</span>
             </button>
           </>
         )}
         {!isRider && order.status === 'processing' && (
-          <div className='w-full justify-between flex gap-2'>
+          <div className="w-full justify-between flex gap-2">
             <button
               onClick={() => onAction(order._id, 'accept')}
-              className="flex items-center space-x-2 lg:px-9 px-3 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors"
+              className="flex items-center space-x-2 lg:px-9 px-3 py-2 bg-emerald-500 text-white rounded-lg hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={actionLoading[actionKey('accept')]}
             >
               <Check className="w-4 h-4" />
-              <span>Accept</span>
+              <span>{actionLoading[actionKey('accept')] ? 'Processing...' : 'Accept'}</span>
             </button>
             <button
               onClick={() => onAction(order._id, 'reject')}
-              className="flex items-center space-x-2 lg:px-9 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+              className="flex items-center space-x-2 lg:px-9 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={actionLoading[actionKey('reject')]}
             >
               <X className="w-4 h-4" />
-              <span>Reject</span>
+              <span>{actionLoading[actionKey('reject')] ? 'Processing...' : 'Reject'}</span>
+            </button>
+          </div>
+        )}
+        {!isRider && order.status === 'pending' && (
+          <div className="space-y-2">
+            <textarea
+              className="w-full p-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              placeholder="Enter payment details (e.g., bank transfer reference)"
+              value={paymentDetails}
+              onChange={(e) => setPaymentDetails(e.target.value)}
+              rows={3}
+            />
+            <button
+              onClick={handleVerifyPayment}
+              className="flex items-center space-x-2 px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed w-full justify-center"
+              disabled={actionLoading[actionKey('verify-payment')] || !paymentDetails.trim()}
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              <span>{actionLoading[actionKey('verify-payment')] ? 'Verifying...' : 'Verify Payment'}</span>
             </button>
           </div>
         )}

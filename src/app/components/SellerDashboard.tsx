@@ -1,15 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { fetchAdminOrders, updateOrderStatus, fetchRiders, assignRider } from '../../lib/api2';
+import { fetchAdminOrders, updateOrderStatus, fetchRiders, assignRider, verifyPayment } from '../../lib/api2';
 import { Order, Rider } from '../../types/order';
 import OrderCard from './OrderCard';
 import OrderModal from './OrderModal';
-import { Bell, Search, Filter, LogOut, Package, TrendingUp, Users, Clock } from 'lucide-react';
+import { Bell, Search, Filter, LogOut, Package, TrendingUp, Users, Clock, Loader2, RefreshCw, X } from 'lucide-react';
 import { AxiosError } from 'axios';
-import { useAuth } from "../../context/AuthContext";
-import { useRouter } from "next/navigation";
+import { useAuth } from '../../context/AuthContext';
+import { useRouter } from 'next/navigation';
 import Navbar from './Navbar2';
+
 // Define the expected error response structure
 interface ApiErrorResponse {
   message?: string;
@@ -20,31 +21,42 @@ export default function SellerDashboard() {
   const [riders, setRiders] = useState<Rider[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [ridersLoading, setRidersLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-    const router = useRouter();
-    const { user, logout } = useAuth();
+  const [actionLoading, setActionLoading] = useState<{ [key: string]: boolean }>({});
+  const router = useRouter();
+  const { user, logout } = useAuth();
 
-  const loadOrders = async () => {
+  const loadOrders = async (showRefreshing = false) => {
     try {
-      console.log('Fetching seller orders...');
+      if (showRefreshing) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      console.log('Fetching seller orders at:', new Date().toISOString());
       const data = await fetchAdminOrders();
       console.log('Orders received:', data);
       const sortedOrders = data.sort((a: Order, b: Order) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       setOrders(sortedOrders);
+      setError(null); // Clear any previous errors
     } catch (err) {
       console.error('Error in loadOrders:', err);
       setError('Failed to load orders');
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   };
 
   const loadRiders = async () => {
     try {
+      setRidersLoading(true);
       console.log('Fetching riders...');
       const data = await fetchRiders();
       console.log('Riders received:', data);
@@ -52,54 +64,76 @@ export default function SellerDashboard() {
     } catch (err) {
       console.error('Error in loadRiders:', err);
       setError('Failed to load riders');
+    } finally {
+      setRidersLoading(false);
     }
   };
 
   useEffect(() => {
     loadOrders();
     loadRiders();
-    const refreshInterval = setInterval(loadOrders, 120000);
-    return () => clearInterval(refreshInterval);
+    const refreshInterval = setInterval(() => loadOrders(true), 120000);
+    return () => clearInterval(refreshInterval); // Fixed typo
   }, []);
 
-    const handleLogout = async () => {
+  const handleLogout = async () => {
     try {
       await logout();
-
-      router.push("/pages/signin");
+      router.push('/pages/signin');
     } catch (error) {
-      console.error("Logout error:", error);
+      console.error('Logout error:', error);
     }
   };
 
- const handleAction = async (
-  orderId: string,
-  action: 'accept' | 'reject' | 'en_route' | 'delivered' | 'assign-rider',
-  riderId?: string
-) => {
-  try {
-    console.log(`Handling action ${action} for order ${orderId}${riderId ? ` with rider ${riderId}` : ''}`);
-    setError(null); // Clear previous errors
+  const handleRefresh = () => {
+    loadOrders(true);
+  };
 
-    if (action === 'assign-rider' && riderId) {
-      const updatedOrder = await assignRider(orderId, riderId);
-      await loadOrders();
-    } else if (action === 'accept' || action === 'reject') {
-      const updatedOrder = await updateOrderStatus(orderId, action);
-      await loadOrders();
-    } else {
-      setError(`Action ${action} is not supported for sellers`);
+  const handleAction = async (
+    orderId: string,
+    action: 'accept' | 'reject' | 'en_route' | 'delivered' | 'assign-rider' | 'verify-payment',
+    riderId?: string,
+    paymentDetails?: string
+  ) => {
+    try {
+      console.log(`Handling action ${action} for order ${orderId}${riderId ? ` with rider ${riderId}` : ''}${paymentDetails ? ` with payment details` : ''}`);
+      setError(null); // Clear previous errors
+
+      // Set loading state for this specific action
+      const actionKey = `${orderId}-${action}${riderId ? `-${riderId}` : ''}${paymentDetails ? `-verify` : ''}`;
+      setActionLoading((prev) => ({ ...prev, [actionKey]: true }));
+
+      if (action === 'assign-rider' && riderId) {
+        const updatedOrder = await assignRider(orderId, riderId);
+        await loadOrders();
+      } else if (action === 'accept' || action === 'reject') {
+        const updatedOrder = await updateOrderStatus(orderId, action);
+        await loadOrders();
+      } else if (action === 'verify-payment' && paymentDetails) {
+        const updatedOrder = await verifyPayment(orderId, paymentDetails);
+        await loadOrders();
+      } else {
+        setError(`Action ${action} is not supported for sellers`);
+      }
+    } catch (err) {
+      const axiosError = err as AxiosError<ApiErrorResponse>;
+      console.error(`Error handling action ${action} for order ${orderId}:`, {
+        message: axiosError.message,
+        response: axiosError.response?.data,
+        status: axiosError.response?.status,
+      });
+      setError(axiosError.response?.data?.message || `Failed to ${action === 'assign-rider' ? 'assign rider to' : action === 'verify-payment' ? 'verify payment for' : action} order`);
+    } finally {
+      // Clear loading state for this specific action
+      const actionKey = `${orderId}-${action}${riderId ? `-${riderId}` : ''}${paymentDetails ? `-verify` : ''}`;
+      setActionLoading((prev) => {
+        const newState = { ...prev };
+        delete newState[actionKey];
+        return newState;
+      });
     }
-  } catch (err) {
-    const axiosError = err as AxiosError<ApiErrorResponse>;
-    console.error(`Error handling action ${action} for order ${orderId}:`, {
-      message: axiosError.message,
-      response: axiosError.response?.data,
-      status: axiosError.response?.status,
-    });
-    setError(axiosError.response?.data?.message || `Failed to ${action === 'assign-rider' ? 'assign rider to' : action} order`);
-  }
-};
+  };
+
   const filteredOrders = orders.filter((order) => {
     const matchesSearch =
       order._id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -127,9 +161,10 @@ export default function SellerDashboard() {
     accepted: orders.filter((o) => o.status === 'accepted').length,
     rejected: orders.filter((o) => o.status === 'rejected').length,
     processing: orders.filter((o) => o.status === 'processing').length,
+    pending: orders.filter((o) => o.status === 'pending').length,
   };
 
-  if (loading) {
+  if (loading && !refreshing) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
@@ -143,28 +178,31 @@ export default function SellerDashboard() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       {/* Header */}
-     <Navbar />
+      <Navbar />
 
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Cards */}
+        {/* Stats Cards with Loading States */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-500 text-sm font-medium">Total Orders</p>
-                <p className="text-3xl font-bold text-slate-800">{stats.total}</p>
+                <p className="text-3xl font-bold text-slate-800 flex items-center">
+                  {refreshing ? <Loader2 className="w-8 h-8 animate-spin" /> : stats.total}
+                </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center">
                 <Package className="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
-        
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-500 text-sm font-medium">Accepted</p>
-                <p className="text-3xl font-bold text-emerald-600">{stats.accepted}</p>
+                <p className="text-3xl font-bold text-emerald-600 flex items-center">
+                  {refreshing ? <Loader2 className="w-8 h-8 animate-spin" /> : stats.accepted}
+                </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-500 rounded-xl flex items-center justify-center">
                 <TrendingUp className="w-6 h-6 text-white" />
@@ -175,16 +213,31 @@ export default function SellerDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-slate-500 text-sm font-medium">Rejected</p>
-                <p className="text-3xl font-bold text-red-600">{stats.rejected}</p>
+                <p className="text-3xl font-bold text-red-600 flex items-center">
+                  {refreshing ? <Loader2 className="w-8 h-8 animate-spin" /> : stats.rejected}
+                </p>
               </div>
               <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center">
                 <Users className="w-6 h-6 text-white" />
               </div>
             </div>
           </div>
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 hover:shadow-xl transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-slate-500 text-sm font-medium">Processing</p>
+                <p className="text-3xl font-bold text-blue-600 flex items-center">
+                  {refreshing ? <Loader2 className="w-8 h-8 animate-spin" /> : stats.processing}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center">
+                <Clock className="w-6 h-6 text-white" />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Search and Filter */}
+        {/* Search and Filter with Refresh Button */}
         <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-white/20 mb-8">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
@@ -205,21 +258,49 @@ export default function SellerDashboard() {
                 onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <option value="all">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="processing">Processing</option>
                 <option value="accepted">Accepted</option>
                 <option value="rejected">Rejected</option>
-                <option value="processing">Processing</option>
+                <option value="assigned">Assigned</option>
+                <option value="in-transit">In Transit</option>
+                <option value="delivered">Delivered</option>
               </select>
             </div>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="flex items-center space-x-2 px-4 py-3 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>{refreshing ? 'Refreshing...' : 'Refresh'}</span>
+            </button>
           </div>
         </div>
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-8 flex items-center space-x-3">
-            <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-xs font-bold">!</span>
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-8 flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                <span className="text-white text-xs font-bold">!</span>
+              </div>
+              <p className="text-red-700">{error}</p>
             </div>
-            <p className="text-red-700">{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-500 hover:text-red-700 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
+        {/* Riders Loading State */}
+        {ridersLoading && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-8 flex items-center space-x-3">
+            <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
+            <p className="text-blue-700">Loading riders...</p>
           </div>
         )}
 
@@ -236,6 +317,7 @@ export default function SellerDashboard() {
                       onView={() => setSelectedOrder(order)}
                       onAction={handleAction}
                       isRider={false}
+                      actionLoading={actionLoading}
                     />
                   </div>
                 </div>
@@ -245,7 +327,7 @@ export default function SellerDashboard() {
         ))}
 
         {/* Empty State */}
-        {filteredOrders.length === 0 && !loading && (
+        {filteredOrders.length === 0 && !loading && !refreshing && (
           <div className="text-center py-16">
             <div className="w-24 h-24 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <Package className="w-12 h-12 text-slate-400" />
@@ -256,6 +338,14 @@ export default function SellerDashboard() {
                 ? 'Try adjusting your search or filter criteria'
                 : 'Orders will appear here once customers start placing them'}
             </p>
+          </div>
+        )}
+
+        {/* Loading State for Orders */}
+        {refreshing && (
+          <div className="text-center py-8">
+            <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-2" />
+            <p className="text-slate-600">Refreshing orders...</p>
           </div>
         )}
       </div>

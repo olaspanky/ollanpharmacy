@@ -61,6 +61,7 @@ export interface Order {
   deliveryOption?: string;
   deliveryAddress?: string;
   deliveryInstructions?: string;
+   paymentDetails?: string;
   customerName?: string;
   riderId?: string;
   riderName?: string;
@@ -73,3 +74,16 @@ export interface Rider {
   name: string;
 }
 
+// In types/order.ts
+export interface OrderCardProps {
+  order: Order;
+  onView: () => void;
+  onAction: (
+    orderId: string,
+    action: 'accept' | 'reject' | 'en_route' | 'delivered' | 'assign-rider' | 'verify-payment',
+    riderId?: string,
+    paymentDetails?: string
+  ) => Promise<void>;
+  isRider: boolean;
+  actionLoading: { [key: string]: boolean };
+}

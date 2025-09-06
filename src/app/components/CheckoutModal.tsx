@@ -3,7 +3,7 @@
 import React, { useRef, useEffect, useState } from "react";
 import { X, User, Phone, Home, CreditCard } from "lucide-react";
 
-// Align CustomerInfo interface with parent's interface
+// Updated CustomerInfo interface to include transactionNumber
 interface CustomerInfo {
   name: string;
   email: string;
@@ -14,6 +14,7 @@ interface CustomerInfo {
   deliveryAddress: string;
   timeSlot: "12 PM" | "4 PM" | "9 PM" | "6 AM" | "" | "nil";
   isUIAddress: boolean;
+  transactionNumber: string; // New field for transaction number
 }
 
 interface CheckoutModalProps {
@@ -26,8 +27,7 @@ interface CheckoutModalProps {
   grandTotal: number;
   estimatedDelivery: string;
   isProcessing: boolean;
-  isPaystackLoaded: boolean;
-  initializePayment: (customerInfo: CustomerInfo) => void;
+  submitOrder: (customerInfo: CustomerInfo) => void; // New prop for order submission
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -40,8 +40,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   grandTotal,
   estimatedDelivery,
   isProcessing,
-  isPaystackLoaded,
-  initializePayment,
+  submitOrder, // New prop to handle order submission
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const [addressError, setAddressError] = useState<string>("");
@@ -170,13 +169,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     if ((customerInfo.deliveryOption === "pickup" || (customerInfo.isUIAddress && customerInfo.deliveryOption === "timeframe")) && customerInfo.deliveryAddress && !customerInfo.pickupLocation.includes(customerInfo.deliveryAddress)) {
       errors.push("Pickup Location must include the selected Delivery Area");
     }
+    if (!customerInfo.transactionNumber.trim()) errors.push("Bank Transaction Number is required");
 
     if (errors.length > 0) {
       alert(`Please fix the following errors:\n${errors.join("\n")}`);
       return;
     }
 
-    // Sanitize fields, setting deliveryAddress to "nil" and using pickupLocation for concatenated data
+    // Sanitize fields
     const sanitizedCustomerInfo: CustomerInfo = {
       name: customerInfo.name.trim(),
       email: customerInfo.email.trim(),
@@ -185,11 +185,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       deliveryOption: customerInfo.deliveryOption,
       pickupLocation:
         customerInfo.deliveryOption === "pickup" || (customerInfo.isUIAddress && customerInfo.deliveryOption === "timeframe")
-          ? customerInfo.pickupLocation // Already concatenated
-          : customerInfo.deliveryAddress.trim(), // Use deliveryAddress for express or non-UI/UCH
-      deliveryAddress: "nil", // Always "nil" as pickupLocation carries address info
+          ? customerInfo.pickupLocation
+          : customerInfo.deliveryAddress.trim(),
+      deliveryAddress: "nil",
       timeSlot: customerInfo.deliveryOption === "timeframe" && customerInfo.isUIAddress ? customerInfo.timeSlot : "nil",
       isUIAddress: customerInfo.isUIAddress,
+      transactionNumber: customerInfo.transactionNumber.trim(),
     };
 
     // Log for debugging
@@ -198,9 +199,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       isUIAddress: sanitizedCustomerInfo.isUIAddress ? "true" : "false",
     });
 
-    // Update state and proceed to payment
-    setCustomerInfo(sanitizedCustomerInfo);
-    initializePayment(sanitizedCustomerInfo);
+    // Submit order
+    submitOrder(sanitizedCustomerInfo);
   };
 
   // Handle prescription file upload
@@ -232,7 +232,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-bold text-gray-900">Complete Your Order</h2>
-              <p className="text-sm text-gray-600 mt-1">Fill in your details to proceed with payment</p>
+              <p className="text-sm text-gray-600 mt-1">Fill in your details and transaction number to submit your order</p>
             </div>
             <button
               onClick={() => setIsOpen(false)}
@@ -491,6 +491,29 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </select>
                 </div>
               )}
+
+              <div className="bg-gray-50 p-4 rounded-xl">
+                <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
+                  <CreditCard size={18} className="mr-2 text-red-500" />
+                  Bank Transaction Number *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={customerInfo.transactionNumber}
+                  onChange={(e) => setCustomerInfo({ ...customerInfo, transactionNumber: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
+                  placeholder="Enter bank transaction number"
+                  aria-label="Bank transaction number"
+                />
+                <div className="mt-3 p-3 bg-red-50 rounded-lg">
+                  <p className="text-sm font-medium text-gray-800">Bank Account Details:</p>
+                  <p className="text-sm text-gray-600">Bank: Opay</p>
+                  <p className="text-sm text-gray-600">Account Name: Ollan Pharmacy Ltd</p>
+                  <p className="text-sm text-gray-600">Account Number: 7019312514</p>
+                  <p className="text-xs text-gray-500 mt-2">Please make the bank transfer and enter the transaction number above.</p>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -521,19 +544,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
             </div>
             <button
               type="submit"
-              disabled={isProcessing || !isPaystackLoaded || !!addressError}
+              disabled={isProcessing || !!addressError}
               className="w-full bg-gradient-to-r from-red-600 to-red-500 text-white py-4 rounded-xl font-bold hover:from-red-700 hover:to-red-600 active:scale-[0.98] transition-all disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center shadow-lg hover:shadow-red-200"
-              aria-label="Proceed to payment"
+              aria-label="Submit order"
             >
               {isProcessing ? (
                 <>
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  Processing Payment...
+                  Submitting Order...
                 </>
               ) : (
                 <>
                   <CreditCard size={20} className="mr-2" />
-                  Pay ₦{grandTotal.toLocaleString()} with Paystack
+                  Submit Order (₦{grandTotal.toLocaleString()})
                 </>
               )}
             </button>

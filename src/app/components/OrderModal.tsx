@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState } from "react";
 import { Order, Rider } from "../../types/order";
@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Timer,
+  Loader2,
 } from "lucide-react";
+import { verifyPayment } from "@/src/lib/api2";
 
 interface OrderModalProps {
   order: Order;
@@ -30,6 +32,9 @@ interface OrderModalProps {
 export default function OrderModal({ order, onClose, riders = [], onAssignRider, isRider }: OrderModalProps) {
   const [selectedRiderId, setSelectedRiderId] = useState<string>("");
   const [isAssigning, setIsAssigning] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState<string>("");
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAssignRider = async () => {
     if (selectedRiderId && onAssignRider) {
@@ -45,10 +50,30 @@ export default function OrderModal({ order, onClose, riders = [], onAssignRider,
     }
   };
 
+  const handleVerifyPayment = async () => {
+    if (!paymentDetails.trim()) {
+      setError("Please provide payment details");
+      return;
+    }
+
+    setIsVerifying(true);
+    setError(null);
+    try {
+      await verifyPayment(order._id, paymentDetails);
+      onClose(); // Close modal on success to refresh the dashboard
+    } catch (err: any) {
+      setError(err.response?.data?.message || "Failed to verify payment");
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "pending":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "processing":
+        return "bg-blue-100 text-blue-800 border-blue-200";
       case "accepted":
         return "bg-blue-100 text-blue-800 border-blue-200";
       case "assigned":
@@ -68,6 +93,8 @@ export default function OrderModal({ order, onClose, riders = [], onAssignRider,
     switch (status.toLowerCase()) {
       case "pending":
         return <Timer className="w-4 h-4" />;
+      case "processing":
+        return <CheckCircle2 className="w-4 h-4" />;
       case "accepted":
         return <User className="w-4 h-4" />;
       case "assigned":
@@ -91,6 +118,7 @@ export default function OrderModal({ order, onClose, riders = [], onAssignRider,
           <button
             onClick={onClose}
             className="absolute right-6 top-6 p-2 hover:bg-white/20 rounded-full transition-colors"
+            disabled={isVerifying || isAssigning}
           >
             <X className="w-5 h-5" />
           </button>
@@ -197,12 +225,56 @@ export default function OrderModal({ order, onClose, riders = [], onAssignRider,
                 </div>
               </div>
 
+              {/* Payment Verification */}
+              {!isRider && order.status === "pending" && (
+                <div className="bg-gradient-to-br from-yellow-50 to-amber-50 p-6 rounded-xl border border-yellow-100">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Receipt className="w-5 h-5 mr-2 text-yellow-600" />
+                    Manual Payment Verification
+                    {isVerifying && (
+                      <Loader2 className="w-4 h-4 ml-2 text-yellow-600 animate-spin" />
+                    )}
+                  </h3>
+                  <div className="space-y-3">
+                    <textarea
+                      className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                      placeholder="Enter payment details (e.g., bank transfer reference, cash payment note)"
+                      value={paymentDetails}
+                      onChange={(e) => setPaymentDetails(e.target.value)}
+                      rows={4}
+                      disabled={isVerifying}
+                    />
+                    {error && <p className="text-red-600 text-sm">{error}</p>}
+                    <button
+                      onClick={handleVerifyPayment}
+                      disabled={isVerifying || !paymentDetails.trim()}
+                      className="w-full flex items-center justify-center space-x-2 px-6 py-4 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white font-semibold rounded-xl hover:from-yellow-600 hover:to-yellow-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      {isVerifying ? (
+                        <>
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          <span>Verifying...</span>
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle2 className="w-5 h-5" />
+                          <span>Verify Payment</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Rider Assignment */}
               {!isRider && (
                 <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-6 rounded-xl border border-orange-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
                     <Truck className="w-5 h-5 mr-2 text-orange-600" />
                     Rider Assignment
+                    {isAssigning && (
+                      <Loader2 className="w-4 h-4 ml-2 text-orange-600 animate-spin" />
+                    )}
                   </h3>
 
                   {order.rider ? (
@@ -225,9 +297,10 @@ export default function OrderModal({ order, onClose, riders = [], onAssignRider,
                       ) : (
                         <div className="space-y-3">
                           <select
-                            className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all"
+                            className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                             value={selectedRiderId}
                             onChange={(e) => setSelectedRiderId(e.target.value)}
+                            disabled={isAssigning}
                           >
                             <option value="">Select a rider</option>
                             {riders.map((rider) => (
@@ -242,8 +315,17 @@ export default function OrderModal({ order, onClose, riders = [], onAssignRider,
                             disabled={!selectedRiderId || isAssigning}
                             className="w-full flex items-center justify-center space-x-2 px-6 py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98]"
                           >
-                            <UserPlus className="w-5 h-5" />
-                            <span>{isAssigning ? "Assigning..." : "Assign Rider"}</span>
+                            {isAssigning ? (
+                              <>
+                                <Loader2 className="w-5 h-5 animate-spin" />
+                                <span>Assigning...</span>
+                              </>
+                            ) : (
+                              <>
+                                <UserPlus className="w-5 h-5" />
+                                <span>Assign Rider</span>
+                              </>
+                            )}
                           </button>
                         </div>
                       )}
@@ -300,6 +382,17 @@ export default function OrderModal({ order, onClose, riders = [], onAssignRider,
                 </div>
               )}
 
+              {/* Payment Details */}
+              {order.paymentDetails && (
+                <div className="bg-gradient-to-br from-gray-50 to-slate-50 p-6 rounded-xl border border-gray-200">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <Receipt className="w-5 h-5 mr-2 text-gray-600" />
+                    Payment Details
+                  </h3>
+                  <p className="text-gray-700">{order.paymentDetails}</p>
+                </div>
+              )}
+
               {/* Order Total */}
               <div className="bg-gradient-to-br from-gray-50 to-slate-50 p-6 rounded-xl border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h3>
@@ -331,7 +424,8 @@ export default function OrderModal({ order, onClose, riders = [], onAssignRider,
         <div className="px-8 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
           <button
             onClick={onClose}
-            className="px-8 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
+            disabled={isVerifying || isAssigning}
+            className="px-8 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white font-semibold rounded-xl hover:from-gray-700 hover:to-gray-800 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
           >
             Close
           </button>
