@@ -154,7 +154,7 @@ import { Order } from '../types/order';
 import { Rider } from '../types/order';
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://ollanbackend-jr1d3g.fly.dev/api',
 });
 
 api.interceptors.request.use((config) => {
