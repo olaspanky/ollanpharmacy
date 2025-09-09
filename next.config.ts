@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export', // Enable static site generation
   async rewrites() {
     return [
       {
@@ -17,8 +16,6 @@ const nextConfig = {
         pathname: '/uploads/**',
       },
     ],
-        unoptimized: true
-
   },
 };
 

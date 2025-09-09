@@ -21,6 +21,7 @@ export interface CustomerInfo {
 
 
 export interface Order {
+  paymentVerified: boolean;
   _id: string;
   //   status: 'pending' | 'processing' | 'accepted' | 'rejected' | 'assigned' | 'en_route' | 'delivered';
   // deliveryStatus?: 'assigned' | 'en_route' | 'delivered';
@@ -28,12 +29,14 @@ export interface Order {
     name: string;
     email: string;
     phone: string;
+  paymentVerified?: boolean; // Indicates if payment is verified
     pickupLocation: string;
     deliveryOption?: string;
   deliveryAddress?: string;
   deliveryInstructions?: string;
   estimatedDelivery?: string;
   transactionNumber: string; // New field for transaction number
+  
   };
   items: {
     productId: { _id: string; name: string };
