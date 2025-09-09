@@ -92,6 +92,13 @@ export default function OrderCard({ order, onView, onAction, isRider, actionLoad
           </div>
         </div>
         <div className="flex items-center space-x-3">
+          <MapPin className="w-4 h-4 text-slate-400" />
+          <div>
+            <p className="text-sm text-slate-500">transaction Number</p>
+            <p className="font-semibold text-slate-800">{order.customerInfo.transactionNumber}</p>
+          </div>
+        </div>
+        <div className="flex items-center space-x-3">
           <DollarSign className="w-4 h-4 text-slate-400" />
           <div>
             <p className="text-sm text-slate-500">Total Amount</p>

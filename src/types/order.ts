@@ -33,6 +33,7 @@ export interface Order {
   deliveryAddress?: string;
   deliveryInstructions?: string;
   estimatedDelivery?: string;
+  transactionNumber: string; // New field for transaction number
   };
   items: {
     productId: { _id: string; name: string };

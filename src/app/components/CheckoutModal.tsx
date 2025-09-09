@@ -3,7 +3,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { X, User, Phone, Home, CreditCard } from "lucide-react";
 
-// Updated CustomerInfo interface to include transactionNumber
 interface CustomerInfo {
   name: string;
   email: string;
@@ -14,7 +13,8 @@ interface CustomerInfo {
   deliveryAddress: string;
   timeSlot: "12 PM" | "4 PM" | "9 PM" | "6 AM" | "" | "nil";
   isUIAddress: boolean;
-  transactionNumber: string; // New field for transaction number
+  transactionNumber: string;
+  discountCode?: string;
 }
 
 interface CheckoutModalProps {
@@ -27,7 +27,7 @@ interface CheckoutModalProps {
   grandTotal: number;
   estimatedDelivery: string;
   isProcessing: boolean;
-  submitOrder: (customerInfo: CustomerInfo) => void; // New prop for order submission
+  submitOrder: (customerInfo: CustomerInfo) => void;
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -40,15 +40,16 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   grandTotal,
   estimatedDelivery,
   isProcessing,
-  submitOrder, // New prop to handle order submission
+  submitOrder,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
+  const customAddressInputRef = useRef<HTMLInputElement>(null);
   const [addressError, setAddressError] = useState<string>("");
+  const [discountError, setDiscountError] = useState<string>("");
+  const [appliedDiscount, setAppliedDiscount] = useState<number>(0);
+  const [showCustomAddress, setShowCustomAddress] = useState<boolean>(false);
 
-  // Predefined delivery areas
-  const deliveryAreas = ["UCH", "Bodija", "Orogun", "Basorun", "University of Ibadan"];
-
-  // Pickup locations for timeframe and pickup options
+  const deliveryAreas = ["UCH", "Bodija", "Orogun", "Basorun", "University of Ibadan", "Other"];
   const uiPickupLocations = [
     "School Gate",
     "Tedder",
@@ -67,7 +68,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   const uchPickupLocations = ["ABH", "First Gate", "Second Gate", "UCH School"];
   const storeLocation = "Store (1 Fadare Close, Iwo Road)";
 
-  // Function to determine the next delivery slot based on current time
   const getNextDeliverySlot = (): "12 PM" | "4 PM" | "9 PM" | "6 AM" => {
     const now = new Date();
     const hours = now.getHours();
@@ -89,7 +89,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     return "6 AM";
   };
 
-  // Automatically set time slot for timeframe delivery
   useEffect(() => {
     if (customerInfo.deliveryOption === "timeframe" && !customerInfo.timeSlot) {
       const nextSlot = getNextDeliverySlot();
@@ -97,13 +96,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     }
   }, [customerInfo.deliveryOption, customerInfo.timeSlot, setCustomerInfo]);
 
-  // Handle click outside to close modal
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
         modalRef.current &&
         !modalRef.current.contains(event.target as Node) &&
-        !(event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)
+        !customAddressInputRef.current?.contains(event.target as Node)
       ) {
         setIsOpen(false);
       }
@@ -120,21 +118,36 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     };
   }, [isOpen, setIsOpen]);
 
-  // Handle delivery area change
   const handleDeliveryAreaChange = (area: string) => {
     const isUIAddress = area === "University of Ibadan" || area === "UCH";
+    const isOtherArea = area === "Other";
+    
+    setShowCustomAddress(isOtherArea);
+    
     setCustomerInfo({
       ...customerInfo,
-      deliveryAddress: area || "",
+      deliveryAddress: isOtherArea ? "" : area,
       isUIAddress,
       deliveryOption: isUIAddress ? customerInfo.deliveryOption || "express" : "express",
-      pickupLocation: isUIAddress && (customerInfo.deliveryOption === "pickup" || customerInfo.deliveryOption === "timeframe") ? customerInfo.pickupLocation : area || "",
+      pickupLocation: isUIAddress && (customerInfo.deliveryOption === "pickup" || customerInfo.deliveryOption === "timeframe") ? customerInfo.pickupLocation : isOtherArea ? "" : area,
       timeSlot: isUIAddress && customerInfo.deliveryOption === "timeframe" ? customerInfo.timeSlot || getNextDeliverySlot() : "nil",
     });
     setAddressError("");
   };
 
-  // Handle pickup location change with concatenation
+  const handleCustomAddressChange = (address: string) => {
+    setCustomerInfo({
+      ...customerInfo,
+      deliveryAddress: address,
+      pickupLocation: address,
+    });
+    if (address.trim()) {
+      setAddressError("");
+    } else {
+      setAddressError("Custom address is required when 'Other' is selected");
+    }
+  };
+
   const handlePickupLocationChange = (location: string) => {
     const concatenatedLocation = customerInfo.deliveryAddress && location && (customerInfo.deliveryOption === "pickup" || customerInfo.deliveryOption === "timeframe")
       ? `${customerInfo.deliveryAddress} - ${location}`
@@ -145,11 +158,19 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
     });
   };
 
-  // Handle form submission
+  const applyDiscountCode = () => {
+    if (customerInfo.discountCode?.trim().toLowerCase() === "ollan2025") {
+      setAppliedDiscount(cartTotal * 0.2);
+      setDiscountError("");
+    } else {
+      setAppliedDiscount(0);
+      setDiscountError("Invalid discount code");
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate required fields
     const errors: string[] = [];
     if (!customerInfo.name.trim()) errors.push("Full Name is required");
     if (!customerInfo.email.trim()) errors.push("Email is required");
@@ -158,7 +179,10 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       errors.push("Delivery Option is required");
     }
     if (!customerInfo.deliveryAddress && customerInfo.deliveryOption !== "pickup") {
-      errors.push("Delivery Area is required for non-pickup options");
+      errors.push("Delivery Address is required for non-pickup options");
+    }
+    if (showCustomAddress && !customerInfo.deliveryAddress.trim() && customerInfo.deliveryOption !== "pickup") {
+      errors.push("Custom address is required when 'Other' is selected");
     }
     if (customerInfo.deliveryOption === "pickup" && (!customerInfo.pickupLocation || customerInfo.pickupLocation === "nil")) {
       errors.push("Pickup Location is required for pickup option");
@@ -176,7 +200,6 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
       return;
     }
 
-    // Sanitize fields
     const sanitizedCustomerInfo: CustomerInfo = {
       name: customerInfo.name.trim(),
       email: customerInfo.email.trim(),
@@ -187,23 +210,21 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
         customerInfo.deliveryOption === "pickup" || (customerInfo.isUIAddress && customerInfo.deliveryOption === "timeframe")
           ? customerInfo.pickupLocation
           : customerInfo.deliveryAddress.trim(),
-      deliveryAddress: "nil",
+      deliveryAddress: customerInfo.isUIAddress ? "nil" : customerInfo.deliveryAddress.trim(),
       timeSlot: customerInfo.deliveryOption === "timeframe" && customerInfo.isUIAddress ? customerInfo.timeSlot : "nil",
       isUIAddress: customerInfo.isUIAddress,
       transactionNumber: customerInfo.transactionNumber.trim(),
+      discountCode: customerInfo.discountCode?.trim() || "",
     };
 
-    // Log for debugging
     console.log("Submitting Customer Info:", {
       ...sanitizedCustomerInfo,
       isUIAddress: sanitizedCustomerInfo.isUIAddress ? "true" : "false",
     });
 
-    // Submit order
     submitOrder(sanitizedCustomerInfo);
   };
 
-  // Handle prescription file upload
   const handlePrescriptionUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -221,6 +242,8 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   if (!isOpen) return null;
+
+  const discountedTotal = grandTotal - appliedDiscount;
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
@@ -321,7 +344,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </label>
                 <select
                   required
-                  value={customerInfo.deliveryAddress}
+                  value={showCustomAddress ? "Other" : customerInfo.deliveryAddress}
                   onChange={(e) => handleDeliveryAreaChange(e.target.value)}
                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white appearance-none"
                   aria-label="Delivery area"
@@ -335,12 +358,27 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     </option>
                   ))}
                 </select>
-                {customerInfo.deliveryOption === "express" && customerInfo.deliveryAddress && (
+                {showCustomAddress && (
+                  <div className="mt-3">
+                    <input
+                      ref={customAddressInputRef}
+                      type="text"
+                      required
+                      value={customerInfo.deliveryAddress}
+                      onChange={(e) => handleCustomAddressChange(e.target.value)}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
+                      placeholder="Enter your full address (e.g., 123 Main St, Ibadan)"
+                      aria-label="Custom delivery address"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                    {addressError && <p className="text-sm text-red-600 mt-2">{addressError}</p>}
+                  </div>
+                )}
+                {customerInfo.deliveryOption === "express" && customerInfo.deliveryAddress && !showCustomAddress && (
                   <p className="text-sm text-gray-600 mt-2">
                     Our rider will contact you to confirm your exact location in {customerInfo.deliveryAddress}.
                   </p>
                 )}
-                {addressError && <p className="text-sm text-red-600 mt-2">{addressError}</p>}
               </div>
 
               <div className="bg-gray-50 p-4 rounded-xl">
@@ -495,6 +533,34 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="bg-gray-50 p-4 rounded-xl">
                 <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
                   <CreditCard size={18} className="mr-2 text-red-500" />
+                  Discount Code
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={customerInfo.discountCode || ""}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, discountCode: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
+                    placeholder="Enter discount code"
+                    aria-label="Discount code"
+                  />
+                  <button
+                    type="button"
+                    onClick={applyDiscountCode}
+                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
+                  >
+                    Apply
+                  </button>
+                </div>
+                {discountError && <p className="text-sm text-red-600 mt-2">{discountError}</p>}
+                {appliedDiscount > 0 && (
+                  <p className="text-sm text-green-600 mt-2">20% discount applied! Saved: ₦{appliedDiscount.toLocaleString()}</p>
+                )}
+              </div>
+
+              <div className="bg-gray-50 p-4 rounded-xl">
+                <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
+                  <CreditCard size={18} className="mr-2 text-red-500" />
                   Bank Transaction Number *
                 </label>
                 <input
@@ -537,9 +603,15 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     : "N/A"}
                 </span>
               </div>
+              {appliedDiscount > 0 && (
+                <div className="flex justify-between text-green-600">
+                  <span>Discount (20%):</span>
+                  <span>-₦{appliedDiscount.toLocaleString()}</span>
+                </div>
+              )}
               <div className="flex justify-between text-2xl font-bold text-red-600">
                 <span>Total:</span>
-                <span>₦{grandTotal.toLocaleString()}</span>
+                <span>₦{discountedTotal.toLocaleString()}</span>
               </div>
             </div>
             <button
@@ -556,7 +628,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               ) : (
                 <>
                   <CreditCard size={20} className="mr-2" />
-                  Submit Order (₦{grandTotal.toLocaleString()})
+                  Submit Order (₦{discountedTotal.toLocaleString()})
                 </>
               )}
             </button>
