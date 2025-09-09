@@ -137,7 +137,7 @@ export default function SellerDashboard() {
         }
 
         // Create SSE connection with token as query parameter
-        sse = new EventSource(`http://localhost:5000/api/orders/stream?token=${encodeURIComponent(token)}`);
+        sse = new EventSource(`https://ollanbackend.vercel.app/api/orders/stream?token=${encodeURIComponent(token)}`);
 
         sse.onopen = () => {
           console.log('SSE connection established');
