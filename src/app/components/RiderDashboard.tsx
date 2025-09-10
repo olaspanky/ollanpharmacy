@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { fetchRiderOrders, updateDeliveryStatus } from '../../lib/api2';
 import { Order } from '../../types/order';
-import OrderCard from './OrderCard';
+import OrderCard from './OrderCard2';
 import OrderModal from './OrderModal';
 import { Bell, Search, Filter, LogOut, Package, Truck, Check, Clock, Loader2, RefreshCw, X } from 'lucide-react';
 import { AxiosError } from 'axios';
