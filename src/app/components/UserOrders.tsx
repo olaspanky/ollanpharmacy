@@ -98,9 +98,9 @@ const UserOrders: React.FC = () => {
 
       // Check for new orders to trigger notifications
       if (orders.length > 0 && sortedOrders.length > orders.length) {
-        const newOrderIds = sortedOrders.map((o) => o._id);
+        const newOrderIds: string[] = sortedOrders.map((o: Order) => o._id);
         const currentOrderIds = orders.map((o) => o._id);
-        const actualNewOrders = sortedOrders.filter((o) => !currentOrderIds.includes(o._id));
+        const actualNewOrders = sortedOrders.filter((o: Order) => !currentOrderIds.includes(o._id));
 
         if (actualNewOrders.length > 0) {
           setNewOrders((prev) => [...actualNewOrders, ...prev]);
