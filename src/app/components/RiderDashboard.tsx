@@ -409,7 +409,7 @@ export default function RiderDashboard() {
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-bold text-slate-800">Rider Dashboard</h1>
           <div className="flex items-center gap-4">
-            <div className="flex items-center space-x-2 bg-white/80 rounded-lg p-2 border border-gray-200">
+            {/* <div className="flex items-center space-x-2 bg-white/80 rounded-lg p-2 border border-gray-200">
               <button
                 onClick={() => setSilentMode(!silentMode)}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all text-sm ${
@@ -432,7 +432,7 @@ export default function RiderDashboard() {
                 <option value={60}>1min refresh</option>
                 <option value={120}>2min refresh</option>
               </select>
-            </div>
+            </div> */}
             <div className="relative">
               <button
                 onClick={handleNotificationClick}

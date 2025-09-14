@@ -260,20 +260,7 @@ const UserOrders: React.FC = () => {
     }
   }, [silentMode, minimizeNotifications, fetchOrders]);
 
-  useEffect(() => {
-    if (autoRefreshInterval > 0) {
-      autoRefreshRef.current = setInterval(() => {
-        fetchOrders(false, true);
-      }, autoRefreshInterval * 1000);
-    }
-
-    return () => {
-      if (autoRefreshRef.current) {
-        clearInterval(autoRefreshRef.current);
-      }
-    };
-  }, [autoRefreshInterval, fetchOrders]);
-
+  
   useEffect(() => {
     let isMounted = true;
 
@@ -455,7 +442,7 @@ const UserOrders: React.FC = () => {
                 <span>{silentMode ? "Silent" : "Normal"}</span>
               </button>
 
-              <select
+              {/* <select
                 value={autoRefreshInterval}
                 onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
                 className="text-xs border border-gray-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-red-500"
@@ -466,7 +453,7 @@ const UserOrders: React.FC = () => {
                 <option value={30}>30s refresh</option>
                 <option value={60}>1min refresh</option>
                 <option value={120}>2min refresh</option>
-              </select>
+              </select> */}
             </div>
 
             <button
