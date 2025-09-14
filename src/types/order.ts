@@ -60,6 +60,7 @@ export interface Order {
   rider?: {
     name: string;
     email: string;
+    _id: any
   };
   estimatedDelivery?: string;
   deliveryOption?: string;
