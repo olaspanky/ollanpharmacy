@@ -309,7 +309,15 @@
 
 // pages/index.tsx
 import HeroSection from './components/HeroSection';
+import InstallPWA from './components/InstallPWA';
+import PWAChecker from './components/PWAChecker';
 
 export default function Home() {
-  return <HeroSection />;
+  return(
+<>
+ <HeroSection />;
+  <InstallPWA />
+  <PWAChecker/>
+</>
+  )
 }
