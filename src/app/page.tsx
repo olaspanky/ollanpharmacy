@@ -317,7 +317,7 @@ export default function Home() {
 <>
  <HeroSection />;
   <InstallPWA />
-  <PWAChecker/>
+  {/* <PWAChecker/> */}
 </>
   )
 }
