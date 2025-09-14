@@ -310,6 +310,7 @@
 // pages/index.tsx
 import HeroSection from './components/HeroSection';
 import InstallPWA from './components/InstallPWA';
+import MobileInstallBanner from './components/MobileInstallBanner';
 import PWAChecker from './components/PWAChecker';
 
 export default function Home() {
@@ -317,6 +318,7 @@ export default function Home() {
 <>
  <HeroSection />;
   <InstallPWA />
+  <MobileInstallBanner/>
   {/* <PWAChecker/> */}
 </>
   )

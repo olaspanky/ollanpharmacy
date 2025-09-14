@@ -185,9 +185,14 @@ export default function RootLayout({
         <meta name="theme-color" content="#0066cc" />
         
         {/* Apple Touch Icons */}
-        <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
+        <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
+        <link rel="apple-touch-startup-image" href="/icons/icon-512x512.png" />
+        
+        {/* iOS Safari specific */}
+        <meta name="format-detection" content="telephone=no" />
+        <meta name="apple-mobile-web-app-title" content="Ollan Pharmacy" />
         
         {/* Favicon */}
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
@@ -227,7 +232,6 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased`}>
         <AuthProvider>
           <ClientLayout>{children}</ClientLayout>
-          
         </AuthProvider>
       </body>
     </html>
