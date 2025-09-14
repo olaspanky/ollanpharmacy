@@ -236,14 +236,30 @@ export default function OrderModal({ order, onClose, riders = [], onAssignRider,
                     )}
                   </h3>
                   <div className="space-y-3">
-                    <textarea
-                      className="w-full p-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                      placeholder="Enter payment details (e.g., bank transfer reference, cash payment note)"
-                      value={paymentDetails}
-                      onChange={(e) => setPaymentDetails(e.target.value)}
-                      rows={4}
-                      disabled={isVerifying}
-                    />
+                   <div className="flex gap-4">
+  <label className="flex items-center text-sm">
+    <input
+      type="radio"
+      name="paymentStatus"
+      value="Verified"
+      checked={paymentDetails === "Verified"}
+      onChange={(e) => setPaymentDetails(e.target.value)}
+      className="mr-2 focus:ring-yellow-500"
+    />
+    Verified
+  </label>
+  <label className="flex items-center text-sm">
+    <input
+      type="radio"
+      name="paymentStatus"
+      value="Not Verified"
+      checked={paymentDetails === "Not Verified"}
+      onChange={(e) => setPaymentDetails(e.target.value)}
+      className="mr-2 focus:ring-yellow-500"
+    />
+    Not Verified
+  </label>
+</div>
                     {error && <p className="text-red-600 text-sm">{error}</p>}
                     <button
                       onClick={handleVerifyPayment}
