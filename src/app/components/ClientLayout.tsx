@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation";
 import Navbar from "./Navbar"; // Adjust path to your Navbar component
-
+import InstallPWA from "./InstallPWA"; // Adjust path to your InstallPWA component
 export default function ClientLayout({
   children,
 }: Readonly<{
@@ -15,6 +15,8 @@ export default function ClientLayout({
     <>
       {showNavbar && <Navbar />}
       {children}
+      <InstallPWA />
+
     </>
   );
 }

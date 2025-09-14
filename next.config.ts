@@ -1,21 +1,53 @@
+// /** @type {import('next').NextConfig} */
+// const nextConfig = {
+//   async rewrites() {
+//     return [
+//       {
+//         source: '/Uploads/:path*',
+//         destination: 'https://ollanbackend.vercel.app/uploads/:path*',
+//       },
+//     ];
+//   },
+//   images: {
+//     remotePatterns: [
+//       {
+//         protocol: 'https',
+//         hostname: 'ollanbackend.vercel.app',
+//         pathname: '/uploads/**',
+//       },
+//     ],
+//   },
+// };
+
+// module.exports = nextConfig;
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  async rewrites() {
+  async headers() {
     return [
       {
-        source: '/Uploads/:path*',
-        destination: 'https://ollanbackend.vercel.app/uploads/:path*',
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+          {
+            key: 'Service-Worker-Allowed',
+            value: '/',
+          },
+        ],
+      },
+      {
+        source: '/manifest.json',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+        ],
       },
     ];
-  },
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'ollanbackend.vercel.app',
-        pathname: '/uploads/**',
-      },
-    ],
   },
 };
 
