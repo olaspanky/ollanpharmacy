@@ -405,7 +405,7 @@ export default function SellerDashboard() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <Navbar />
 
-      {showLiveIndicator && (
+      {/* {showLiveIndicator && (
         <div
           className={`fixed top-4 right-4 z-50 transition-all duration-300 ${
             webSocketConnected
@@ -423,7 +423,7 @@ export default function SellerDashboard() {
             </span>
           </div>
         </div>
-      )}
+      )} */}
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         <div className="flex justify-between items-center mb-6">

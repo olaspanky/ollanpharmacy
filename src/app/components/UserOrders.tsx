@@ -415,7 +415,7 @@ const UserOrders: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {showLiveIndicator && (
+      {/* {showLiveIndicator && (
         <div
           className={`fixed top-4 right-4 z-50 transition-all duration-300 ${
             webSocketConnected
@@ -433,7 +433,7 @@ const UserOrders: React.FC = () => {
             </span>
           </div>
         </div>
-      )}
+      )} */}
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="mb-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

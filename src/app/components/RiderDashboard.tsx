@@ -383,7 +383,7 @@ export default function RiderDashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      {showLiveIndicator && (
+      {/* {showLiveIndicator && (
         <div
           className={`fixed top-4 right-4 z-50 transition-all duration-300 ${
             webSocketConnected
@@ -401,7 +401,7 @@ export default function RiderDashboard() {
             </span>
           </div>
         </div>
-      )}
+      )} */}
 
       <Navbar />
 
