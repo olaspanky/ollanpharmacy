@@ -1,11 +1,9 @@
-
 import axios, { AxiosResponse, AxiosError } from 'axios';
 import { Order } from '../types/order';
 import { Rider } from '../types/order';
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://ollanbackend.vercel.app/api',
-  
 });
 
 api.interceptors.request.use((config) => {
@@ -143,6 +141,21 @@ export const verifyPayment = async (orderId: string, paymentDetails: string): Pr
   } catch (error) {
     const axiosError = error as AxiosError;
     console.error('verifyPayment error:', {
+      message: axiosError.message,
+      response: axiosError.response?.data,
+      status: axiosError.response?.status,
+    });
+    throw error;
+  }
+};
+
+export const shareTrackingLink = async (orderId: string): Promise<{ message: string; trackingUrl: string }> => {
+  try {
+    const response: AxiosResponse<{ message: string; trackingUrl: string }> = await api.post('/orders/share-tracking', { orderId });
+    return response.data;
+  } catch (error) {
+    const axiosError = error as AxiosError;
+    console.error('shareTrackingLink error:', {
       message: axiosError.message,
       response: axiosError.response?.data,
       status: axiosError.response?.status,
