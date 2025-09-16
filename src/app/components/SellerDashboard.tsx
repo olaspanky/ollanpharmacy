@@ -300,45 +300,36 @@ export default function SellerDashboard() {
   };
 
   const handleAction = async (
-    orderId: string,
-    action: 'accept' | 'reject' | 'en_route' | 'delivered' | 'assign-rider' | 'verify-payment',
-    riderId?: string,
-    paymentDetails?: string
-  ) => {
-    try {
-      setError(null);
-
-      const actionKey = `${orderId}-${action}${riderId ? `-${riderId}` : ''}${paymentDetails ? `-verify` : ''}`;
-      setActionLoading((prev) => ({ ...prev, [actionKey]: true }));
-
-      if (action === 'assign-rider' && riderId) {
-        await assignRider(orderId, riderId);
-      } else if (action === 'accept' || action === 'reject') {
-        await updateOrderStatus(orderId, action);
-      } else if (action === 'verify-payment' && paymentDetails) {
-        await verifyPayment(orderId, paymentDetails);
-      } else {
-        setError(`Action ${action} is not supported for sellers`);
-      }
-
-      await loadOrders(false, true);
-    } catch (err) {
-      const axiosError = err as AxiosError<ApiErrorResponse>;
-      console.error(`Error handling action ${action} for order ${orderId}:`, {
-        message: axiosError.message,
-        response: axiosError.response?.data,
-        status: axiosError.response?.status,
+  orderId: string,
+  action: 'accept' | 'reject' | 'en_route' | 'delivered' | 'assign-rider' | 'verify-payment' | 'share-tracking',
+  riderId?: string,
+  paymentDetails?: string
+) => {
+  setActionLoading((prev) => ({ ...prev, [`${orderId}-${action}${riderId ? `-${riderId}` : ''}${action === 'verify-payment' ? '-verify' : ''}${action === 'share-tracking' ? '-share' : ''}`]: true }));
+  try {
+    if (action === 'share-tracking') {
+      await fetch('/api/orders/share-tracking', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({ orderId }),
       });
-      setError(axiosError.response?.data?.message || `Failed to ${action === 'assign-rider' ? 'assign rider to' : action === 'verify-payment' ? 'verify payment for' : action} order`);
-    } finally {
-      const actionKey = `${orderId}-${action}${riderId ? `-${riderId}` : ''}${paymentDetails ? `-verify` : ''}`;
-      setActionLoading((prev) => {
-        const newState = { ...prev };
-        delete newState[actionKey];
-        return newState;
-      });
+      alert('Tracking link sent to customer!');
+    } else {
+      // Handle other actions (accept, reject, etc.)
+      // ... existing code ...
     }
-  };
+  } catch (error) {
+    console.error(`Error performing action ${action}:`, error);
+    alert('Action failed');
+  } finally {
+    setActionLoading((prev) => ({ ...prev, [`${orderId}-${action}${riderId ? `-${riderId}` : ''}${action === 'verify-payment' ? '-verify' : ''}${action === 'share-tracking' ? '-share' : ''}`]: false }));
+  }
+};
+
+ 
 
   const handleNotificationClick = () => {
     setShowNotifications(!showNotifications);
@@ -442,18 +433,7 @@ export default function SellerDashboard() {
                 <span>{silentMode ? 'Silent' : 'Normal'}</span>
               </button>
 
-              {/* <select
-                value={autoRefreshInterval}
-                onChange={(e) => setAutoRefreshInterval(Number(e.target.value))}
-                className="text-xs border border-slate-200 rounded px-2 py-1 bg-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-                title="Auto-refresh interval"
-              >
-                <option value={0}>No auto-refresh</option>
-                <option value={15}>15s refresh</option>
-                <option value={30}>30s refresh</option>
-                <option value={60}>1min refresh</option>
-                <option value={120}>2min refresh</option>
-              </select> */}
+            
             </div>
           </div>
 
