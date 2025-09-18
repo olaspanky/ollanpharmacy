@@ -28,6 +28,7 @@ interface CheckoutModalProps {
   estimatedDelivery: string;
   isProcessing: boolean;
   submitOrder: (customerInfo: CustomerInfo) => void;
+  cart: { productId: { _id: string; price: number; category?: string }; quantity: number }[];
 }
 
 const CheckoutModal: React.FC<CheckoutModalProps> = ({
@@ -41,6 +42,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   estimatedDelivery,
   isProcessing,
   submitOrder,
+  cart,
 }) => {
   const modalRef = useRef<HTMLDivElement>(null);
   const customAddressInputRef = useRef<HTMLInputElement>(null);
@@ -67,6 +69,14 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   ];
   const uchPickupLocations = ["ABH", "First Gate", "Second Gate", "UCH School"];
   const storeLocation = "Store (1 Fadare Close, Iwo Road)";
+
+  // Promo codes for 10% discount on supermarket items
+  const discountPromoCodes = ["SUPER10", "SAVE10", "MARKET10"];
+  // Promo codes for free delivery
+  const freeDeliveryPromoCodes = ["FREESHIP", "DELIVERFREE", "SHIP0"];
+
+  const supermarketCategories = ["Baby Care", "Groceries", "Beverages", "Household"];
+  const validPromoAreas = ["University of Ibadan", "UCH"];
 
   const getNextDeliverySlot = (): "12 PM" | "4 PM" | "9 PM" | "6 AM" => {
     const now = new Date();
@@ -159,11 +169,48 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
   };
 
   const applyDiscountCode = () => {
-    if (customerInfo.discountCode?.trim().toLowerCase() === "ollan2025") {
-      setAppliedDiscount(cartTotal * 0.2);
-      setDiscountError("");
+    const code = customerInfo.discountCode?.trim().toLowerCase();
+    
+    // Reset states
+    setDiscountError("");
+    setAppliedDiscount(0);
+
+    if (!code) {
+      setDiscountError("Please enter a discount code");
+      return;
+    }
+
+    // Check if delivery area is UI or UCH
+    if (!validPromoAreas.includes(customerInfo.deliveryAddress)) {
+      setDiscountError("Discount codes are only valid for UI and UCH deliveries");
+      return;
+    }
+
+    // Calculate total for supermarket items only
+    const supermarketTotal = cart.reduce((total, item) => {
+      if (item.productId.category && supermarketCategories.includes(item.productId.category)) {
+        return total + item.productId.price * item.quantity;
+      }
+      return total;
+    }, 0);
+
+    if (discountPromoCodes.map(c => c.toLowerCase()).includes(code)) {
+      // Apply 10% discount only to supermarket items
+      if (supermarketTotal > 0) {
+        setAppliedDiscount(supermarketTotal * 0.1);
+        setDiscountError("");
+      } else {
+        setDiscountError("Discount code only applies to supermarket items");
+      }
+    } else if (freeDeliveryPromoCodes.map(c => c.toLowerCase()).includes(code)) {
+      // Apply free delivery
+      if (deliveryFee > 0) {
+        setAppliedDiscount(deliveryFee);
+        setDiscountError("");
+      } else {
+        setDiscountError("Free delivery code cannot be applied when delivery is already free");
+      }
     } else {
-      setAppliedDiscount(0);
       setDiscountError("Invalid discount code");
     }
   };
@@ -383,7 +430,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               <div className="bg-gray-50 p-4 rounded-xl">
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Delivery Option * (Fee: {customerInfo.deliveryOption === "express" ? "₦1,500" : customerInfo.deliveryOption === "timeframe" ? (cartTotal >= 5000 ? "Free" : "₦500") : customerInfo.deliveryOption === "pickup" ? "Free" : "Select an option"})
+                  Delivery Option * (Fee: {customerInfo.deliveryOption === "express" ? "₦1,500" : customerInfo.deliveryOption === "timeframe" ? (cartTotal >= 5000 || (customerInfo.discountCode && freeDeliveryPromoCodes.map(c => c.toLowerCase()).includes(customerInfo.discountCode.toLowerCase())) ? "Free" : "₦500") : customerInfo.deliveryOption === "pickup" ? "Free" : "Select an option"})
                 </label>
                 <div className="space-y-3">
                   <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
@@ -431,7 +478,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                         />
                         <div className="ml-3">
                           <span className="block text-sm font-medium text-gray-800">Timeframe Delivery</span>
-                          <span className="block text-xs text-gray-500">{cartTotal >= 5000 ? "Free (12 PM, 4 PM, 9 PM, 6 AM)" : "₦500 (12 PM, 4 PM, 9 PM, 6 AM)"}</span>
+                          <span className="block text-xs text-gray-500">{(cartTotal >= 5000 || (customerInfo.discountCode && freeDeliveryPromoCodes.map(c => c.toLowerCase()).includes(customerInfo.discountCode.toLowerCase()))) ? "Free (12 PM, 4 PM, 9 PM, 6 AM)" : "₦500 (12 PM, 4 PM, 9 PM, 6 AM)"}</span>
                         </div>
                       </label>
                       <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
@@ -554,7 +601,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
                 {discountError && <p className="text-sm text-red-600 mt-2">{discountError}</p>}
                 {appliedDiscount > 0 && (
-                  <p className="text-sm text-green-600 mt-2">20% discount applied! Saved: ₦{appliedDiscount.toLocaleString()}</p>
+                  <p className="text-sm text-green-600 mt-2">
+                    {discountPromoCodes.map(c => c.toLowerCase()).includes(customerInfo.discountCode?.toLowerCase() || "")
+                      ? "10% discount applied to supermarket items! Saved: ₦"
+                      : "Free delivery applied! Saved: ₦"}
+                    {appliedDiscount.toLocaleString()}
+                  </p>
                 )}
               </div>
 
@@ -592,7 +644,9 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               <div className="flex justify-between text-black">
                 <span>Delivery Fee:</span>
                 <span>
-                  {customerInfo.deliveryOption && customerInfo.deliveryOption !== "nil"
+                  {customerInfo.deliveryOption && customerInfo.discountCode && freeDeliveryPromoCodes.map(c => c.toLowerCase()).includes(customerInfo.discountCode.toLowerCase())
+                    ? "Free"
+                    : customerInfo.deliveryOption && customerInfo.deliveryOption !== "nil"
                     ? customerInfo.deliveryOption === "express"
                       ? "₦1,500"
                       : customerInfo.deliveryOption === "pickup"
@@ -605,7 +659,11 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
               </div>
               {appliedDiscount > 0 && (
                 <div className="flex justify-between text-green-600">
-                  <span>Discount (20%):</span>
+                  <span>
+                    {discountPromoCodes.map(c => c.toLowerCase()).includes(customerInfo.discountCode?.toLowerCase() || "")
+                      ? "Discount (10% on supermarket items)"
+                      : "Free Delivery Discount"}
+                  </span>
                   <span>-₦{appliedDiscount.toLocaleString()}</span>
                 </div>
               )}

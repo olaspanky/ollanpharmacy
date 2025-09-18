@@ -2243,18 +2243,19 @@ const PharmacyApp: React.FC = () => {
 
       <QuantityModal />
       <CartModal />
-      <CheckoutModal
-        isOpen={isCheckoutOpen}
-        setIsOpen={setIsCheckoutOpen}
-        customerInfo={customerInfo}
-        setCustomerInfo={setCustomerInfo}
-        cartTotal={cartTotal}
-        deliveryFee={deliveryFee}
-        grandTotal={grandTotal}
-        estimatedDelivery={estimatedDelivery}
-        isProcessing={isProcessing}
-        submitOrder={submitOrder}
-      />
+     <CheckoutModal
+  isOpen={isCheckoutOpen}
+  setIsOpen={setIsCheckoutOpen}
+  customerInfo={customerInfo}
+  setCustomerInfo={setCustomerInfo}
+  cartTotal={cartTotal}
+  deliveryFee={deliveryFee}
+  grandTotal={grandTotal}
+  estimatedDelivery={estimatedDelivery}
+  isProcessing={isProcessing}
+  submitOrder={submitOrder}
+  cart={cart} // Add this line
+/>
       <OrderCompleteModal />
       <UnauthenticatedModal />
     </div>
