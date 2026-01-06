@@ -1,28 +1,16 @@
-// /** @type {import('next').NextConfig} */
-// const nextConfig = {
-//   async rewrites() {
-//     return [
-//       {
-//         source: '/Uploads/:path*',
-//         destination: 'https://ollanbackend.vercel.app/uploads/:path*',
-//       },
-//     ];
-//   },
-//   images: {
-//     remotePatterns: [
-//       {
-//         protocol: 'https',
-//         hostname: 'ollanbackend.vercel.app',
-//         pathname: '/uploads/**',
-//       },
-//     ],
-//   },
-// };
-
-// module.exports = nextConfig;
-
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Allow images from any external domain (quick fix for development/testing)
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "**", // Allows all HTTPS hosts – perfect for your many product image sources
+      },
+    ],
+  },
+
+  // Your existing PWA/service worker headers
   async headers() {
     return [
       {
