@@ -846,22 +846,7 @@ const PharmacyApp: React.FC = () => {
 
         <div className="mb-8">
           <h3 className="text-2xl font-bold text-gray-900 mb-6">Categories</h3>
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-4">
-            {(viewMode === "Supermarket" ? supermarketCategories : pharmacyCategories).map((category) => (
-              <button
-                key={category}
-                className={`px-6 py-3 rounded-xl text-sm font-semibold transition-all duration-300 active:scale-95 whitespace-nowrap flex-shrink-0 ${
-                  selectedCategory === category
-                    ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/25"
-                    : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 hover:border-red-200"
-                }`}
-                onClick={() => setSelectedCategory(category)}
-                aria-label={`Filter by ${category}`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+          
         </div>
 
         <div className="mb-12">

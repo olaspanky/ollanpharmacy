@@ -243,7 +243,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         {/* Main Form Card */}
         <div className="bg-white/80 backdrop-blur-sm shadow-2xl rounded-2xl p-8 border border-white/20">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-gradient-to-r from-red-600 to-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <Lock className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{titles[type]}</h1>
@@ -268,7 +268,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
                   name="name"
                   value={formData.name || ""}
                   onChange={handleInputChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-white/50"
                   placeholder="Enter your full name"
                 />
                 {errors.name && (
@@ -292,7 +292,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-white/50"
                   placeholder="Enter your email address"
                 />
                 {errors.email && (
@@ -317,7 +317,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
                     name="password"
                     value={formData.password || ""}
                     onChange={handleInputChange}
-                    className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white/50"
+                    className="w-full p-3 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-white/50"
                     placeholder="Enter your password"
                   />
                   <button
@@ -419,7 +419,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
             <button
               type="submit"
               disabled={isSubmitting || isLoading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-red-600 to-red-600 hover:from-red-700 hover:to-red-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-2"
             >
               {isSubmitting || isLoading ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -438,7 +438,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
               <div className="space-y-2">
                 <button
                   onClick={() => router.push("/forgot-password")}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+                  className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
                 >
                   Forgot your password?
                 </button>
@@ -446,7 +446,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
                   Don't have an account?{" "}
                   <button
                     onClick={() => router.push("/pages/signup")}
-                    className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                    className="text-red-600 hover:text-red-800 font-medium transition-colors"
                   >
                     Sign up
                   </button>
@@ -459,7 +459,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
                 Already have an account Stuart
                 <button
                   onClick={() => router.push("/pages/signin")}
-                  className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
+                  className="text-red-600 hover:text-red-800 font-medium transition-colors"
                 >
                   Sign in
                 </button>
