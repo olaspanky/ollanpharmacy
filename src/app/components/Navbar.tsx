@@ -2,16 +2,23 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { Search, Heart, ShoppingBag, ChevronDown, Menu, X, User, LogOut, Gift } from "lucide-react";
+import {
+  Search,
+  Heart,
+  ShoppingBag,
+  ChevronDown,
+  Menu,
+  X,
+  User,
+  LogOut,
+  Gift,
+} from "lucide-react";
 import logo from "../../../public/ollogo.svg";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
 
-const navLinks = [
-  { name: "Home", href: "/" },
-  
-];
+const navLinks = [{ name: "Home", href: "/" }];
 
 const categories = [
   "All Categories",
@@ -26,7 +33,9 @@ const categories = [
   "Dental Care",
 ];
 
-const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({ links = navLinks }) => {
+const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({
+  links = navLinks,
+}) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
@@ -76,7 +85,11 @@ const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({ links 
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/search?q=${encodeURIComponent(searchQuery)}&category=${encodeURIComponent(selectedCategory)}`);
+      router.push(
+        `/search?q=${encodeURIComponent(
+          searchQuery
+        )}&category=${encodeURIComponent(selectedCategory)}`
+      );
     }
   };
 
@@ -92,7 +105,7 @@ const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({ links 
     <header className="bg-white shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Top Header */}
-        <div className="flex items-center justify-between py-4">
+        <div className="flex items-center justify-between lg:py-4">
           {/* Logo */}
           <div className="flex items-center flex-shrink-0">
             <Link href="/" className="flex items-center">
@@ -109,62 +122,22 @@ const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({ links 
             </Link>
           </div>
 
-          {/* Search Bar */}
-          {/* <div className="hidden md:flex items-center flex-1 max-w-2xl mx-8">
-            <form onSubmit={handleSearch} className="w-full">
-              <div className="flex items-center bg-gray-50 rounded-full px-4 py-2 border border-gray-200 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-500/20 transition-all">
-                <select
-                  className="bg-transparent border-none outline-none text-gray-600 text-sm pr-2"
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                >
-                  {categories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
-                <div className="h-4 w-px bg-gray-300 mx-3"></div>
-                <input
-                  type="text"
-                  placeholder="Search medicine, medical products..."
-                  className="bg-transparent border-none outline-none flex-1 text-sm placeholder-gray-500"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <button
-                  type="submit"
-                  className="bg-red-500 hover:bg-red-600 text-white p-2 rounded-full ml-2 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500/50"
-                  aria-label="Search"
-                >
-                  <Search className="w-4 h-4" />
-                </button>
-              </div>
-            </form>
-          </div> */}
+       
 
           {/* Right Icons */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* <button
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-              aria-label="Wishlist"
-            >
-              <Heart className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
-            </button> */}
+           
             {user ? (
-            <button
-              className="p-2 rounded-full hover:bg-gray-100 transition-colors"
-              aria-label="Shopping cart"
-            >
-              <Link
-                        href="/pages/orders"
-                      >
-              <ShoppingBag className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
-            </Link>
-            </button>
+              <button
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                aria-label="Shopping cart"
+              >
+                <Link href="/pages/orders">
+                  <ShoppingBag className="w-6 h-6 text-gray-600 hover:text-red-500 transition-colors" />
+                </Link>
+              </button>
             ) : (
-              <>
-              </>
+              <></>
             )}
 
             {/* User Dropdown */}
@@ -180,7 +153,7 @@ const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({ links 
                   )}
                 </div>
                 <span className="text-gray-700 font-medium hidden lg:block">
-                  {user ? (user.name || "Profile") : "Account"}
+                  {user ? user.name || "Profile" : "Account"}
                 </span>
                 <ChevronDown className="w-4 h-4 text-gray-600 ml-1 transition-transform group-hover:rotate-180" />
               </button>
@@ -337,7 +310,7 @@ const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({ links 
                     )}
                   </div>
                   <span className="text-gray-700 font-medium">
-                    {user ? (user.name || "Profile") : "Account"}
+                    {user ? user.name || "Profile" : "Account"}
                   </span>
                 </div>
 
