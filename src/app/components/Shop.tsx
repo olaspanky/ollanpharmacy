@@ -911,32 +911,7 @@ const PharmacyApp: React.FC = () => {
         </div>
       </main>
 
-      <footer className="bg-gradient-to-r from-gray-900 to-black text-white py-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div>
-              <h3 className="text-2xl font-bold mb-4">FreshGrocer</h3>
-              <p className="text-gray-400">
-                Your trusted partner for fresh groceries and pharmacy essentials delivered to your doorstep.
-              </p>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-              <div className="space-y-2">
-                <Link href="/" className="text-gray-400 hover:text-white transition-colors">Home</Link>
-                <Link href="/pages/orders" className="text-gray-400 hover:text-white transition-colors">My Orders</Link>
-                <Link href="/pages/signin" className="text-gray-400 hover:text-white transition-colors">Account</Link>
-              </div>
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-4">Contact Us</h4>
-              <p className="text-gray-400">24/7 Customer Support</p>
-              <p className="text-gray-400">support@ollan.com</p>
-            </div>
-          </div>
-        </div>
-      </footer>
-
+    
       <QuantityModal />
       <CartModal />
       <CheckoutModal
