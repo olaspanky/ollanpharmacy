@@ -952,7 +952,7 @@ const PharmacyApp: React.FC = () => {
       <header className="bg-white shadow-lg border-b border-gray-100 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between w-full">
-            <Link href="/">
+            <Link href="/pages/home">
               <div className="p-2">
                 <Image src={logo} alt="Ollan Logo" width={80} height={80} className="lg:w-20 w-12" />
               </div>
