@@ -62,11 +62,11 @@ const ShopByCategory: React.FC = () => {
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent card click from triggering navigation
-    router.push("/pages/shop"); // Navigate to /pages/shop
+    router.push("/"); // Navigate to /pages/shop
   };
 
   const handleProductClick = () => {
-    router.push("/pages/shop"); // Navigate to /pages/shop
+    router.push("/"); // Navigate to /pages/shop
   };
 
   interface ComingSoonModalProps {
@@ -153,7 +153,7 @@ const ShopByCategory: React.FC = () => {
                 {selectedCategory === "All Category" ? "All Products" : selectedCategory}
               </h3>
               <button
-                onClick={() => router.push("/pages/shop")}
+                onClick={() => router.push("/")}
                 className="text-red-500 font-semibold flex items-center hover:text-red-600 transition-colors"
                 aria-label="See more products"
               >

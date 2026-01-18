@@ -308,7 +308,7 @@
 // }
 
 // pages/index.tsx
-import HeroSection from './components/HeroSection';
+import HeroSection from './components/Shop';
 import InstallPWA from './components/InstallPWA';
 import MobileInstallBanner from './components/MobileInstallBanner';
 import PWAChecker from './components/PWAChecker';

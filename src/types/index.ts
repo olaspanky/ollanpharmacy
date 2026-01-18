@@ -7,7 +7,28 @@ export interface Product {
   stock: number;
   category?: string;
   createdAt: string;
+  bundleOffers?: BundleOffer[]; // Add bundle offers to product
+
 }
+
+
+
+// Add these to your existing types
+export interface BundleOffer {
+  id: string;
+  name: string;
+  description: string;
+  items: BundleItem[];
+  discountPercentage: number;
+  minQuantity: number;
+}
+
+export interface BundleItem {
+  productId: string;
+  requiredQuantity: number;
+}
+
+
 
 export interface CartItem {
   productId: Product;

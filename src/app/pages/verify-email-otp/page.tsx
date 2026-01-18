@@ -55,7 +55,7 @@ const VerifyEmailOTP = () => {
         localStorage.setItem("token", data.token);
         localStorage.setItem("user", JSON.stringify(data.user));
         setUser(data.user);
-        setTimeout(() => router.push("/pages/shop"), 2000);
+        setTimeout(() => router.push("/"), 2000);
       }
     } catch (error) {
       setStatus("error");

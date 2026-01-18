@@ -164,7 +164,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
             localStorage.setItem("user", JSON.stringify(data.user));
             setUser(data.user);
             showNotification("success", "Welcome back!");
-            setTimeout(() => router.push("/pages/shop"), 1000);
+            setTimeout(() => router.push("/"), 1000);
           }
         }
       }

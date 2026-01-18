@@ -6,7 +6,16 @@ import Link from "next/link";
 import Image from "next/image";
 import logo from "../../../public/ollogo.svg";
 import { useAuth } from "../../context/AuthContext";
-import { Product, CartItem } from "../../types";
+import { Product } from "../../types";
+
+interface CartItem {
+  productId: Product;
+  quantity: number;
+  bundleApplied?: boolean;
+  originalPrice?: number;
+  finalPrice?: number;
+  discount?: number;
+}
 import { useRouter } from "next/navigation";
 import api from "@/src/lib/api";
 import CheckoutModal from "./CheckoutModal";
@@ -67,6 +76,68 @@ const cartReducer = (state: CartItem[], action: CartAction): CartItem[] => {
   }
 };
 
+// Helper function for bundle pricing
+const getProductBundleInfo = (productName: string, quantity: number, price: number) => {
+  const lowerName = productName.toLowerCase();
+  
+  // Check for eggs
+  if (lowerName.includes('egg')) {
+    if (quantity >= 3) {
+      const originalPrice = price * quantity;
+      const discount = originalPrice * 0.05; // 5% off
+      return {
+        hasBundle: true,
+        bundleName: "3 Eggs Bundle",
+        discountPercentage: 5,
+        originalPrice: originalPrice,
+        finalPrice: originalPrice - discount,
+        savedAmount: discount
+      };
+    }
+  }
+  
+  // Check for noodles
+  if (lowerName.includes('noodle')) {
+    if (quantity >= 3) {
+      const originalPrice = price * quantity;
+      const discount = originalPrice * 0.05; // 5% off
+      return {
+        hasBundle: true,
+        bundleName: "3 Noodles Bundle",
+        discountPercentage: 5,
+        originalPrice: originalPrice,
+        finalPrice: originalPrice - discount,
+        savedAmount: discount
+      };
+    }
+  }
+  
+  // Check for sachet tomato
+  if (lowerName.includes('tomato') && (lowerName.includes('sachet') || lowerName.includes('satchet'))) {
+    if (quantity >= 10) {
+      const originalPrice = price * quantity;
+      const discount = originalPrice * 0.05; // 5% off
+      return {
+        hasBundle: true,
+        bundleName: "10 Sachet Tomatoes Bundle",
+        discountPercentage: 5,
+        originalPrice: originalPrice,
+        finalPrice: originalPrice - discount,
+        savedAmount: discount
+      };
+    }
+  }
+  
+  return {
+    hasBundle: false,
+    bundleName: "",
+    discountPercentage: 0,
+    originalPrice: price * quantity,
+    finalPrice: price * quantity,
+    savedAmount: 0
+  };
+};
+
 interface CustomerInfo {
   name: string;
   email: string;
@@ -82,7 +153,6 @@ interface CustomerInfo {
 
 const supermarketCategories = [
   "All Products",
-  
   "Supermarket"
 ];
 
@@ -90,7 +160,6 @@ const pharmacyCategories = [
   "Pain Reliever",
   "Anti Malaria",
   "Cough and Cold",
-  "Pain Reliever",
   "Digestive Health",
   "Skin Care",
   "Baby Care",
@@ -306,7 +375,16 @@ const PharmacyApp: React.FC = () => {
       : filteredProducts;
   }, [filteredProducts, searchQuery]);
 
-  const cartTotal = cart.reduce((total, item) => total + (item.productId?.price || 0) * item.quantity, 0);
+  const cartTotal = cart.reduce((total, item) => {
+    const bundleInfo = getProductBundleInfo(item.productId.name, item.quantity, item.productId.price);
+    return total + bundleInfo.finalPrice;
+  }, 0);
+
+  const totalSavings = cart.reduce((total, item) => {
+    const bundleInfo = getProductBundleInfo(item.productId.name, item.quantity, item.productId.price);
+    return total + bundleInfo.savedAmount;
+  }, 0);
+
   const deliveryFee = cartTotal > 0
     ? customerInfo.deliveryOption === "express"
       ? 1500
@@ -319,14 +397,29 @@ const PharmacyApp: React.FC = () => {
   const handleAddToCart = async () => {
     if (selectedProduct && quantity > 0) {
       try {
+        const bundleInfo = getProductBundleInfo(selectedProduct.name, quantity, selectedProduct.price);
+        
         const { data } = await api.post("/api/cart/add", {
           productId: selectedProduct._id,
           quantity,
+          bundleApplied: bundleInfo.hasBundle,
+          originalPrice: bundleInfo.originalPrice,
+          finalPrice: bundleInfo.finalPrice,
+          discount: bundleInfo.savedAmount
         });
+        
         cartDispatch({
           type: "ADD_ITEM",
-          payload: { productId: selectedProduct, quantity },
+          payload: { 
+            productId: selectedProduct, 
+            quantity,
+            bundleApplied: bundleInfo.hasBundle,
+            originalPrice: bundleInfo.originalPrice,
+            finalPrice: bundleInfo.finalPrice,
+            discount: bundleInfo.savedAmount
+          },
         });
+        
         setIsQuantityModalOpen(false);
         setSelectedProduct(null);
         setQuantity(1);
@@ -386,10 +479,13 @@ const PharmacyApp: React.FC = () => {
         productId: item.productId._id,
         quantity: item.quantity,
         price: item.productId.price,
+        bundleApplied: item.bundleApplied,
+        finalPrice: getProductBundleInfo(item.productId.name, item.quantity, item.productId.price).finalPrice
       })),
       cartTotal,
       deliveryFee,
       grandTotal,
+      totalSavings,
       prescriptionUrl,
     };
 
@@ -468,6 +564,8 @@ const PharmacyApp: React.FC = () => {
 
     if (!isQuantityModalOpen || !selectedProduct) return null;
 
+    const bundleInfo = getProductBundleInfo(selectedProduct.name, quantity, selectedProduct.price);
+
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
         <div ref={modalRef} className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl">
@@ -529,13 +627,72 @@ const PharmacyApp: React.FC = () => {
                 <Plus size={20} />
               </button>
             </div>
+            
+            {/* Bundle Information */}
+            {bundleInfo.hasBundle && (
+              <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                  <span className="font-bold text-green-700 text-sm">Bundle Offer Applied!</span>
+                </div>
+                <p className="text-green-600 text-sm mb-1">
+                  {bundleInfo.bundleName} - {bundleInfo.discountPercentage}% OFF
+                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <span className="text-gray-600 text-sm line-through">
+                    ₦{bundleInfo.originalPrice.toLocaleString()}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-green-700 text-lg">
+                      ₦{bundleInfo.finalPrice.toLocaleString()}
+                    </span>
+                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                      Save ₦{bundleInfo.savedAmount.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Bundle Requirements */}
+            {!bundleInfo.hasBundle && (
+              <div className="mt-4">
+                {selectedProduct.name.toLowerCase().includes('egg') && quantity < 3 && (
+                  <p className="text-sm text-amber-600 text-center">
+                    Add {3 - quantity} more egg(s) for 5% bundle discount
+                  </p>
+                )}
+                {selectedProduct.name.toLowerCase().includes('noodle') && quantity < 3 && (
+                  <p className="text-sm text-amber-600 text-center">
+                    Add {3 - quantity} more noodle(s) for 5% bundle discount
+                  </p>
+                )}
+                {selectedProduct.name.toLowerCase().includes('tomato') && 
+                 (selectedProduct.name.toLowerCase().includes('sachet') || 
+                  selectedProduct.name.toLowerCase().includes('satchet')) && 
+                 quantity < 10 && (
+                  <p className="text-sm text-amber-600 text-center">
+                    Add {10 - quantity} more sachet tomato(es) for 5% bundle discount
+                  </p>
+                )}
+              </div>
+            )}
           </div>
           <button
             onClick={handleAddToCart}
             className="w-full bg-gradient-to-r from-red-500 to-orange-500 py-4 rounded-xl font-bold text-white hover:from-red-600 hover:to-orange-600 active:scale-[0.98] transition-all duration-200 shadow-lg shadow-red-500/25"
             aria-label={`Add ${selectedProduct.name} to cart`}
           >
-            Add to Cart • ₦{(selectedProduct.price * quantity).toLocaleString()}
+            {bundleInfo.hasBundle ? (
+              <>
+                Add to Cart • <span className="line-through text-white/70 mr-1">
+                  ₦{bundleInfo.originalPrice.toLocaleString()}
+                </span>
+                ₦{bundleInfo.finalPrice.toLocaleString()}
+              </>
+            ) : (
+              `Add to Cart • ₦${(selectedProduct.price * quantity).toLocaleString()}`
+            )}
           </button>
         </div>
       </div>
@@ -585,6 +742,11 @@ const PharmacyApp: React.FC = () => {
                   <p className="text-gray-500 text-sm mt-1">
                     {cart.length} {cart.length === 1 ? 'item' : 'items'}
                   </p>
+                  {totalSavings > 0 && (
+                    <p className="text-green-600 text-sm mt-1 font-medium">
+                      Total Savings: ₦{totalSavings.toLocaleString()}
+                    </p>
+                  )}
                 </div>
                 <button
                   onClick={() => setIsCartOpen(false)}
@@ -614,61 +776,97 @@ const PharmacyApp: React.FC = () => {
                   <div className="space-y-4 mb-8">
                     {cart
                       .filter((item) => item?.productId)
-                      .map((item) => (
-                        <div key={item.productId._id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-4 border border-gray-100 hover:shadow-md transition-all duration-200">
-                          <div className="flex items-center gap-4">
-                            <div className="h-20 w-20 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-2">
-                              <img
-                                src={`${item?.productId?.image}`}
-                                alt={item?.productId?.name || "Product"}
-                                className="h-full w-full object-contain"
-                              />
-                            </div>
-                            <div className="flex-1">
-                              <h3 className="font-bold text-gray-900 mb-1">{item?.productId?.name || "Unknown Product"}</h3>
-                              <p className="text-red-500 font-bold text-lg">
-                                ₦{item?.productId?.price ? item.productId.price.toLocaleString() : "0"}
-                              </p>
-                              <div className="flex items-center justify-between mt-3">
-                                <div className="flex items-center gap-3 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full px-4 py-2">
+                      .map((item) => {
+                        const bundleInfo = getProductBundleInfo(item.productId.name, item.quantity, item.productId.price);
+                        const displayPrice = bundleInfo.finalPrice;
+                        
+                        return (
+                          <div key={item.productId._id} className="bg-gradient-to-r from-gray-50 to-white rounded-2xl p-4 border border-gray-100 hover:shadow-md transition-all duration-200">
+                            <div className="flex items-center gap-4">
+                              <div className="h-20 w-20 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center p-2">
+                                <img
+                                  src={`${item?.productId?.image}`}
+                                  alt={item?.productId?.name || "Product"}
+                                  className="h-full w-full object-contain"
+                                />
+                              </div>
+                              <div className="flex-1">
+                                <div className="flex items-start justify-between">
+                                  <h3 className="font-bold text-gray-900 mb-1">{item?.productId?.name || "Unknown Product"}</h3>
+                                  {bundleInfo.hasBundle && (
+                                    <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                      Bundle Save
+                                    </span>
+                                  )}
+                                </div>
+                                
+                                {bundleInfo.hasBundle ? (
+                                  <div className="mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-gray-500 text-sm line-through">
+                                        ₦{bundleInfo.originalPrice.toLocaleString()}
+                                      </span>
+                                      <span className="text-red-500 font-bold text-lg">
+                                        ₦{displayPrice.toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <p className="text-xs text-green-600">
+                                      You saved ₦{bundleInfo.savedAmount.toLocaleString()}
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <p className="text-red-500 font-bold text-lg mb-3">
+                                    ₦{displayPrice.toLocaleString()}
+                                  </p>
+                                )}
+                                
+                                <div className="flex items-center justify-between mt-3">
+                                  <div className="flex items-center gap-3 bg-gradient-to-r from-gray-100 to-gray-200 rounded-full px-4 py-2">
+                                    <button
+                                      onClick={() =>
+                                        cartDispatch({
+                                          type: "UPDATE_QUANTITY",
+                                          payload: { id: item.productId._id, quantity: item.quantity - 1 },
+                                        })
+                                      }
+                                      className="p-1 hover:bg-white rounded-full active:scale-95 transition-all duration-200"
+                                    >
+                                      <Minus size={16} />
+                                    </button>
+                                    <span className="font-bold text-gray-900 min-w-[24px] text-center">{item.quantity}</span>
+                                    <button
+                                      onClick={() =>
+                                        cartDispatch({
+                                          type: "UPDATE_QUANTITY",
+                                          payload: { id: item.productId._id, quantity: item.quantity + 1 },
+                                        })
+                                      }
+                                      className="p-1 hover:bg-white rounded-full active:scale-95 transition-all duration-200"
+                                    >
+                                      <Plus size={16} />
+                                    </button>
+                                  </div>
                                   <button
-                                    onClick={() =>
-                                      cartDispatch({
-                                        type: "UPDATE_QUANTITY",
-                                        payload: { id: item.productId._id, quantity: item.quantity - 1 },
-                                      })
-                                    }
-                                    className="p-1 hover:bg-white rounded-full active:scale-95 transition-all duration-200"
+                                    onClick={() => removeFromCart(item.productId._id)}
+                                    className="p-2 hover:bg-red-50 text-red-500 rounded-xl active:scale-95 transition-all duration-200"
                                   >
-                                    <Minus size={16} />
-                                  </button>
-                                  <span className="font-bold text-gray-900 min-w-[24px] text-center">{item.quantity}</span>
-                                  <button
-                                    onClick={() =>
-                                      cartDispatch({
-                                        type: "UPDATE_QUANTITY",
-                                        payload: { id: item.productId._id, quantity: item.quantity + 1 },
-                                      })
-                                    }
-                                    className="p-1 hover:bg-white rounded-full active:scale-95 transition-all duration-200"
-                                  >
-                                    <Plus size={16} />
+                                    <X size={20} />
                                   </button>
                                 </div>
-                                <button
-                                  onClick={() => removeFromCart(item.productId._id)}
-                                  className="p-2 hover:bg-red-50 text-red-500 rounded-xl active:scale-95 transition-all duration-200"
-                                >
-                                  <X size={20} />
-                                </button>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                   </div>
                   <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-6 mb-6">
                     <div className="space-y-4">
+                      {totalSavings > 0 && (
+                        <div className="flex justify-between items-center bg-gradient-to-r from-green-50 to-emerald-50 p-3 rounded-lg">
+                          <span className="text-green-600 font-medium">Total Savings</span>
+                          <span className="font-bold text-green-700">-₦{totalSavings.toLocaleString()}</span>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center">
                         <span className="text-gray-600">Subtotal</span>
                         <span className="font-bold text-gray-900">₦{cartTotal.toLocaleString()}</span>
@@ -838,15 +1036,28 @@ const PharmacyApp: React.FC = () => {
               className="w-full p-4 pl-14 pr-4 border-2 border-gray-200 rounded-2xl focus:border-red-500 focus:ring-4 focus:ring-red-500/20 focus:outline-none transition-all duration-300 text-black text-lg shadow-lg"
               aria-label="Search products"
             />
-            <Search size={24} className="absolute left-5 top-1/2 transform -translate-y-1/2 text-gray-400" />
+            <Search size={24} className="absolute left-5 top-1/2 transform -translatey-1/2 text-gray-400" />
           </div>
         </div>
 
-       
-
         <div className="mb-8">
           <h3 className="text-2xl font-bold text-gray-900 mb-6">Categories</h3>
-          
+          <div className="flex gap-2 overflow-x-auto pb-4">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-6 py-3 rounded-full whitespace-nowrap transition-all duration-300 active:scale-95 ${
+                  selectedCategory === category
+                    ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30"
+                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                }`}
+                aria-label={`Select ${category} category`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="mb-12">
@@ -860,44 +1071,95 @@ const PharmacyApp: React.FC = () => {
           </div>
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 lg:gap-6">
-              {filteredProducts.map((product) => (
-                <div
-                  key={product._id}
-                  className="bg-white rounded-xl   shadow-md hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-red-100 group"
-                >
-                  <div className="w-full h-40 rounded-lg mb-4 flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 group-hover:from-red-50 group-hover:to-orange-50 transition-all duration-300">
-                    <img
-                      src={`${product.image}`}
-                      alt={product.name}
-                      className="h-32 w-32 object-contain group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                  </div>
-                  <div className="mb-4 p-2">
-                    <h4 className="font-bold text-gray-900 mb-2 line-clamp-2 text-sm lg:text-base">{product.name}</h4>
-                    <div className="flex items-center justify-between">
-                      <p className="text-lg font-bold text-red-500">₦{product?.price.toLocaleString()}</p>
-                      {product.stock > 0 ? (
-                        <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-                      ) : (
-                        <div className="h-2 w-2 rounded-full bg-red-500"></div>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => openQuantityModal(product)}
-                    disabled={product.stock === 0}
-                    className={`w-full py-2.5 rounded-lg font-semibold text-sm transition-all duration-300 active:scale-95 ${
-                      product.stock > 0
-                        ? "bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600"
-                        : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                    }`}
-                    aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
-                  >
-                    {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-                  </button>
-                </div>
-              ))}
+              {filteredProducts.map((product) => {
+                const hasBundle = product.name.toLowerCase().includes('egg') || 
+                  product.name.toLowerCase().includes('noodle') ||
+                  (product.name.toLowerCase().includes('tomato') && 
+                   (product.name.toLowerCase().includes('sachet') || 
+                    product.name.toLowerCase().includes('satchet')));
+                
+                return (
+                 <div
+  key={product._id}
+  className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 
+             border border-gray-100 hover:border-red-100 group
+             flex flex-col h-full"           // ← KEY CHANGES HERE
+>
+  {/* Image container - fixed height */}
+  <div className="w-full h-40 rounded-lg mb-4 flex items-center justify-center 
+                  bg-gradient-to-br from-gray-50 to-gray-100 
+                  group-hover:from-red-50 group-hover:to-orange-50 
+                  transition-all duration-300">
+    <img
+      src={`${product.image}`}
+      alt={product.name}
+      className="h-32 w-32 object-contain group-hover:scale-105 transition-transform duration-300"
+      loading="lazy"
+    />
+  </div>
+
+  {/* Content area - grows to push button down */}
+  <div className="flex flex-col flex-grow px-2 pb-4">
+    <h4 className="font-bold text-gray-900 mb-2 line-clamp-2 text-sm lg:text-base">
+      {product.name}
+    </h4>
+
+    <div className="flex items-center justify-between mt-auto">
+      <p className="text-lg font-bold text-red-500">
+        ₦{product?.price.toLocaleString()}
+      </p>
+      <div className="flex items-center gap-2">
+        {product.stock > 0 ? (
+          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+        ) : (
+          <div className="h-2 w-2 rounded-full bg-red-500"></div>
+        )}
+        {hasBundle && product.stock > 0 && (
+          <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
+        )}
+      </div>
+    </div>
+
+    {hasBundle && product.stock > 0 && (
+      <div className="mt-2">
+        {product.name.toLowerCase().includes('egg') && (
+          <p className="text-xs text-blue-600 font-medium">
+            🎁 Buy 3+ for 5% off
+          </p>
+        )}
+        {product.name.toLowerCase().includes('noodle') && (
+          <p className="text-xs text-blue-600 font-medium">
+            🎁 Buy 3+ for 5% off
+          </p>
+        )}
+        {(product.name.toLowerCase().includes('tomato') && 
+          (product.name.toLowerCase().includes('sachet') || 
+           product.name.toLowerCase().includes('satchet'))) && (
+          <p className="text-xs text-blue-600 font-medium">
+            🎁 Buy 10+ for 5% off
+          </p>
+        )}
+      </div>
+    )}
+  </div>
+
+  {/* Button always at bottom */}
+  <button
+    onClick={() => openQuantityModal(product)}
+    disabled={product.stock === 0}
+    className={`mx-2 mb-2 py-2.5 rounded-lg font-semibold text-sm 
+                transition-all duration-300 active:scale-95 ${
+      product.stock > 0
+        ? "bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600"
+        : "bg-gray-200 text-gray-500 cursor-not-allowed"
+    }`}
+    aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
+  >
+    {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+  </button>
+</div>
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-12">
@@ -910,7 +1172,6 @@ const PharmacyApp: React.FC = () => {
           )}
         </div>
       </main>
-
     
       <QuantityModal />
       <CartModal />
