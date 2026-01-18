@@ -1087,13 +1087,13 @@ const PharmacyApp: React.FC = () => {
 >
   {/* Image container - fixed height */}
   <div className="w-full h-40 rounded-lg mb-4 flex items-center justify-center 
-                  bg-gradient-to-br from-gray-50 to-gray-100 
+                   
                   group-hover:from-red-50 group-hover:to-orange-50 
                   transition-all duration-300">
     <img
       src={`${product.image}`}
       alt={product.name}
-      className="h-32 w-32 object-contain group-hover:scale-105 transition-transform duration-300"
+      className="h-40 w-40 object-contain group-hover:scale-105 transition-transform duration-300"
       loading="lazy"
     />
   </div>
