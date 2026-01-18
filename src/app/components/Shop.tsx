@@ -1028,25 +1028,7 @@ const PharmacyApp: React.FC = () => {
 
       
 
-        <div className="mb-8">
-          <h3 className="text-2xl font-bold text-gray-900 mb-6">Categories</h3>
-          <div className="flex gap-2 overflow-x-auto pb-4">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-6 py-3 rounded-full whitespace-nowrap transition-all duration-300 active:scale-95 ${
-                  selectedCategory === category
-                    ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-lg shadow-red-500/30"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-                aria-label={`Select ${category} category`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
+      
 
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
