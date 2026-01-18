@@ -1026,19 +1026,7 @@ const PharmacyApp: React.FC = () => {
           </p>
         </div>
 
-        <div className="mb-8">
-          <div className="relative max-w-2xl mx-auto">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => handleSearchInputChange(e.target.value)}
-              placeholder={viewMode === "Supermarket" ? "Search groceries, fruits, vegetables..." : "Search medications..."}
-              className="w-full p-4 pl-14 pr-4 border-2 border-gray-200 rounded-2xl focus:border-red-500 focus:ring-4 focus:ring-red-500/20 focus:outline-none transition-all duration-300 text-black text-lg shadow-lg"
-              aria-label="Search products"
-            />
-            <Search size={24} className="absolute left-5 top-1/2 transform -translatey-1/2 text-gray-400" />
-          </div>
-        </div>
+      
 
         <div className="mb-8">
           <h3 className="text-2xl font-bold text-gray-900 mb-6">Categories</h3>
