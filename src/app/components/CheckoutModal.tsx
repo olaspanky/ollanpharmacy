@@ -366,22 +366,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 />
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                  <Home size={18} className="mr-2 text-red-500" />
-                  Prescription (Optional)
-                </label>
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,application/pdf"
-                  onChange={handlePrescriptionUpload}
-                  className="w-full p-3 border border-gray-300 rounded-lg text-gray-800 bg-white"
-                  aria-label="Prescription upload"
-                />
-                {customerInfo.prescription && (
-                  <p className="text-sm text-gray-600 mt-2">File: {customerInfo.prescription.name}</p>
-                )}
-              </div>
+            
             </div>
 
             <div className="space-y-5">
@@ -431,7 +416,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
               <div className="bg-gray-50 p-4 rounded-xl">
                 <label className="block text-sm font-medium mb-2 text-gray-700">
-                  Delivery Option * (Fee: {customerInfo.deliveryOption === "express" ? "₦1,500" : customerInfo.deliveryOption === "timeframe" ? (cartTotal >= 5000 || (customerInfo.discountCode && freeDeliveryPromoCodes.map(c => c.toLowerCase()).includes(customerInfo.discountCode.toLowerCase())) ? "Free" : "₦500") : customerInfo.deliveryOption === "pickup" ? "Free" : "Select an option"})
+                  Delivery Option * (Fee: {customerInfo.deliveryOption === "express" ? "₦500" : customerInfo.deliveryOption === "timeframe" ? (cartTotal >= 5000 || (customerInfo.discountCode && freeDeliveryPromoCodes.map(c => c.toLowerCase()).includes(customerInfo.discountCode.toLowerCase())) ? "Free" : "₦500") : customerInfo.deliveryOption === "pickup" ? "Free" : "Select an option"})
                 </label>
                 <div className="space-y-3">
                   <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
@@ -454,34 +439,12 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     />
                     <div className="ml-3">
                       <span className="block text-sm font-medium text-gray-800">Express Delivery</span>
-                      <span className="block text-xs text-gray-500">Within 1 hour (₦1,500)</span>
+                      <span className="block text-xs text-gray-500">Within 1 hour (₦500)</span>
                     </div>
                   </label>
                   {customerInfo.isUIAddress && (
                     <>
-                      <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
-                        <input
-                          type="radio"
-                          id="timeframe"
-                          name="deliveryOption"
-                          value="timeframe"
-                          checked={customerInfo.deliveryOption === "timeframe"}
-                          onChange={(e) =>
-                            setCustomerInfo({
-                              ...customerInfo,
-                              deliveryOption: e.target.value as "timeframe",
-                              pickupLocation: customerInfo.deliveryAddress || "",
-                              timeSlot: getNextDeliverySlot(),
-                            })
-                          }
-                          className="h-4 w-4 text-red-600 focus:ring-red-500"
-                          aria-label="Timeframe delivery"
-                        />
-                        <div className="ml-3">
-                          <span className="block text-sm font-medium text-gray-800">Timeframe Delivery</span>
-                          <span className="block text-xs text-gray-500">{(cartTotal >= 5000 || (customerInfo.discountCode && freeDeliveryPromoCodes.map(c => c.toLowerCase()).includes(customerInfo.discountCode.toLowerCase()))) ? "Free (12 PM, 4 PM, 9 PM, 6 AM)" : "₦500 (12 PM, 4 PM, 9 PM, 6 AM)"}</span>
-                        </div>
-                      </label>
+           
                       <label className="flex items-center p-3 border border-gray-300 rounded-lg hover:border-red-300 cursor-pointer">
                         <input
                           type="radio"
@@ -578,38 +541,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                 </div>
               )}
 
-              <div className="bg-gray-50 p-4 rounded-xl">
-                <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
-                  <CreditCard size={18} className="mr-2 text-red-500" />
-                  Discount Code
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={customerInfo.discountCode || ""}
-                    onChange={(e) => setCustomerInfo({ ...customerInfo, discountCode: e.target.value })}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent text-gray-800 bg-white"
-                    placeholder="Enter discount code"
-                    aria-label="Discount code"
-                  />
-                  <button
-                    type="button"
-                    onClick={applyDiscountCode}
-                    className="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700"
-                  >
-                    Apply
-                  </button>
-                </div>
-                {discountError && <p className="text-sm text-red-600 mt-2">{discountError}</p>}
-                {appliedDiscount > 0 && (
-                  <p className="text-sm text-green-600 mt-2">
-                    {discountPromoCodes.map(c => c.toLowerCase()).includes(customerInfo.discountCode?.toLowerCase() || "")
-                      ? "10% discount applied to supermarket items! Saved: ₦"
-                      : "Free delivery applied! Saved: ₦"}
-                    {appliedDiscount.toLocaleString()}
-                  </p>
-                )}
-              </div>
+           
 
               <div className="bg-gray-50 p-4 rounded-xl">
                 <label className="block text-sm font-medium mb-2 text-gray-700 flex items-center">
@@ -649,7 +581,7 @@ const CheckoutModal: React.FC<CheckoutModalProps> = ({
                     ? "Free"
                     : customerInfo.deliveryOption && customerInfo.deliveryOption !== "nil"
                     ? customerInfo.deliveryOption === "express"
-                      ? "₦1,500"
+                      ? "₦500"
                       : customerInfo.deliveryOption === "pickup"
                       ? "Free"
                       : cartTotal >= 5000

@@ -1133,11 +1133,7 @@ const PharmacyApp: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-12">
-              <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
-                <Search size={48} className="text-gray-400" />
-              </div>
-              <h3 className="text-xl font-bold text-gray-700 mb-2">No products found</h3>
-              <p className="text-gray-500">Try selecting a different category or search term</p>
+             <SkeletonLoader/>
             </div>
           )}
         </div>
