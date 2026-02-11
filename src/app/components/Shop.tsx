@@ -8,6 +8,12 @@ import logo from "../../../public/ollogo.svg";
 import { useAuth } from "../../context/AuthContext";
 import { Product } from "../../types";
 
+import { useRouter } from "next/navigation";
+import api from "@/src/lib/api";
+import CheckoutModal from "./CheckoutModal";
+import SkeletonLoader from "./SkeletonLoader";
+
+
 interface CartItem {
   productId: Product;
   quantity: number;
@@ -16,10 +22,6 @@ interface CartItem {
   finalPrice?: number;
   discount?: number;
 }
-import { useRouter } from "next/navigation";
-import api from "@/src/lib/api";
-import CheckoutModal from "./CheckoutModal";
-import SkeletonLoader from "./SkeletonLoader";
 
 // Cart reducer types
 type CartAction =
@@ -951,7 +953,7 @@ const PharmacyApp: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <header className="bg-white shadow-lg border-b border-gray-100 sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between gap-2 w-full">
+          <div className="flex items-center justify-between w-full">
             <Link href="/pages/home">
               <div className="p-2">
                 <Image src={logo} alt="Ollan Logo" width={80} height={80} className="lg:w-20 w-12" />
@@ -973,6 +975,7 @@ const PharmacyApp: React.FC = () => {
                 <span className="flex text-sm lg:text-base items-center gap-2">
                   <ShoppingBag size={18} />
                   <span className="hidden lg:inline">Supermarket</span>
+                  <span className="lg:hidden">Market</span>
                 </span>
               </button>
               <button
@@ -992,6 +995,7 @@ const PharmacyApp: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
                   </svg>
                   <span className="hidden lg:inline">Pharmacy</span>
+                  <span className="lg:hidden">Pharm</span>
                 </span>
               </button>
             </div>
