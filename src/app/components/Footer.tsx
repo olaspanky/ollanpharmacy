@@ -4,10 +4,10 @@ const OllanFooter = () => {
   const [hoveredLink, setHoveredLink] = useState(null);
 
   const quickLinks = [
-    { label: "Home", href: "/" },
-    { label: "Shop", href: "/shop" },
-    { label: "About Us", href: "/about" },
-    { label: "Contact", href: "/contact" },
+    { label: "Home", href: "/pages/home" },
+    { label: "Shop", href: "/" },
+    { label: "About Us", href: "/pages/about" },
+    { label: "Contact", href: "/pages/contact" },
   ];
 
   const services = [
@@ -372,18 +372,9 @@ const OllanFooter = () => {
         }
       `}</style>
 
-      <footer className="ollan-footer">
+      <footer className="bg-gradient-to-r from-red-500 to-orange-700 text-cream relative overflow-hidden ">
         {/* Top brand bar */}
-        <div className="footer-top-bar">
-          <div className="footer-brand">
-            <div className="brand-pill">O</div>
-            <div>
-              <div className="brand-name">Ollan Pharmacy</div>
-              <div className="brand-tagline">Your Health, Our Priority</div>
-            </div>
-          </div>
-          <div className="rc-badge">RC No: 69,342</div>
-        </div>
+       
 
         {/* Main grid */}
         <div className="footer-main">
