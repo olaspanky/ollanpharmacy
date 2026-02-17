@@ -35,7 +35,11 @@ export default function AboutUs() {
     };
   }, []);
 
-  const ceo: TeamMember = {
+
+
+  const teamMembers: TeamMember[] = [
+
+    {
     id: 1,
     name: "Oladejo Olakareem",
     role: "Chief Executive Officer",
@@ -43,9 +47,7 @@ export default function AboutUs() {
     color: "#dc2626",
       imageUrl: i1, // Replace with actual image path
     initials: "SM"
-  };
-
-  const teamMembers: TeamMember[] = [
+  },
     {
       id: 2,
       name: "Abdulkarerm Ajolayo Olakareem",
@@ -138,10 +140,8 @@ export default function AboutUs() {
                 className="text-8xl md:text-9xl lg:text-[5rem] font-black mb-8 relative leading-none"
                 style={{ fontFamily: "'Bebas Neue', 'Impact', sans-serif" }}
               >
-                <span className="absolute inset-0 text-red-600 opacity-50 blur-lg animate-pulse">
-                  THE TEAM
-                </span>
-                <span className="relative bg-gradient-to-r from-white via-red-100 to-white bg-clip-text text-transparent">
+              
+                <span className="bg-gradient-to-r from-red-400 to-orange-500 bg-clip-text text-transparent">
                   THE TEAM
                 </span>
               </h1>
@@ -170,138 +170,7 @@ export default function AboutUs() {
             </div>
 
             {/* CEO Spotlight - HERO CARD */}
-            <div 
-              className="mb-20 perspective-1000"
-              style={{
-                animation: 'slideUp 0.8s ease-out both'
-              }}
-            >
-              <div 
-                className="relative max-w-5xl mx-auto"
-                onMouseEnter={() => setActiveCard(ceo.id)}
-                onMouseLeave={() => setActiveCard(null)}
-              >
-                {/* Glowing Background Effect */}
-                <div className="absolute -inset-4 bg-gradient-to-r from-red-600 via-red-500 to-red-600 rounded-[3rem] blur-2xl opacity-30 group-hover:opacity-50 transition-opacity duration-700 animate-pulse"></div>
-                
-                <div className="relative bg-gradient-to-br from-red-600 via-red-700 to-black rounded-[2.5rem] overflow-hidden border-2 border-red-500 transform-gpu transition-all duration-700 hover:scale-[1.02] hover:shadow-2xl hover:shadow-red-500/50">
-                  {/* Animated Scanlines */}
-                  <div className="absolute inset-0 opacity-10 pointer-events-none">
-                    <div className="absolute inset-0 animate-scanline" style={{
-                      backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(255,255,255,0.3) 2px, rgba(255,255,255,0.3) 4px)'
-                    }}></div>
-                  </div>
-
-                  {/* Spotlight Effect */}
-                  <div 
-                    className="absolute w-96 h-96 rounded-full opacity-30 pointer-events-none"
-                    style={{
-                      background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, transparent 70%)',
-                      left: mousePosition.x / 10,
-                      top: mousePosition.y / 10,
-                      transition: 'left 0.5s ease-out, top 0.5s ease-out'
-                    }}
-                  ></div>
-
-                  <div className="relative p-12 md:p-16">
-                    <div className="flex flex-col md:flex-row items-center md:items-start gap-12">
-                      {/* CEO Image - Large Circle */}
-                      <div className="relative flex-shrink-0">
-                        <div className="relative w-64 h-64 md:w-80 md:h-80">
-                          {/* Rotating Ring */}
-                          <div className="absolute inset-0 rounded-full border-4 border-dashed border-white/30 animate-spin-slow"></div>
-                          <div className="absolute inset-4 rounded-full border-2 border-white/20"></div>
-                          
-                          {/* Main Circle with Image */}
-                          <div className="absolute inset-8 rounded-full bg-gradient-to-br from-white to-red-50 shadow-2xl overflow-hidden">
-                            {/* Image Container */}
-                            <div className="relative w-full h-full">
-                              <Image 
-                                src={ceo.imageUrl} 
-                                alt={`${ceo.name} - ${ceo.role}`}
-                                className="w-full h-full object-cover"
-                               
-                              />
-                             
-                            </div>
-                          </div>
-
-                          {/* Orbiting Dots */}
-                          <div className="absolute inset-0 pointer-events-none">
-                            {[0, 120, 240].map((angle, i) => (
-                              <div
-                                key={i}
-                                className="absolute w-4 h-4 bg-white rounded-full shadow-lg"
-                                style={{
-                                  top: '50%',
-                                  left: '50%',
-                                  transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(-140px)`,
-                                  animation: `orbit 6s linear ${i * 2}s infinite`
-                                }}
-                              ></div>
-                            ))}
-                          </div>
-                        </div>
-
-                        {/* CEO Badge */}
-                        <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-red-600 px-8 py-3 rounded-full shadow-xl border-4 border-red-600">
-                          <span className="font-black text-2xl tracking-wider" style={{ fontFamily: "'Oswald', sans-serif" }}>
-                            CEO
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* CEO Info */}
-                      <div className="flex-1 text-center md:text-left">
-                        <div className="inline-block mb-4 px-6 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20">
-                          <span className="text-sm font-bold tracking-widest uppercase text-white/90" style={{ fontFamily: "'Space Mono', monospace" }}>
-                            {ceo.role}
-                          </span>
-                        </div>
-
-                        <h2 
-                          className="text-6xl md:text-7xl lg:text-8xl font-black mb-6 leading-none text-white"
-                          style={{ fontFamily: "'Bebas Neue', 'Impact', sans-serif" }}
-                        >
-                          {ceo.name}
-                        </h2>
-
-                        <div className="w-24 h-1 bg-white mb-6 md:mx-0 mx-auto"></div>
-
-                        <p 
-                          className="text-xl md:text-2xl text-white/90 leading-relaxed mb-8"
-                          style={{ fontFamily: "'Lato', sans-serif" }}
-                        >
-                          {ceo.bio}
-                        </p>
-
-                        {/* CEO Stats */}
-                        <div className="grid grid-cols-3 gap-4">
-                          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
-                            <div className="text-4xl font-black text-white mb-1">15+</div>
-                            <div className="text-sm text-white/70">Years</div>
-                          </div>
-                          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
-                            <div className="text-4xl font-black text-white mb-1">5+</div>
-                            <div className="text-sm text-white/70">Projects</div>
-                          </div>
-                          <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/20">
-                            <div className="text-4xl font-black text-white mb-1">50+</div>
-                            <div className="text-sm text-white/70">Team</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Decorative Corner Elements */}
-                    <div className="absolute top-8 left-8 w-16 h-16 border-t-4 border-l-4 border-white/30 rounded-tl-3xl"></div>
-                    <div className="absolute top-8 right-8 w-16 h-16 border-t-4 border-r-4 border-white/30 rounded-tr-3xl"></div>
-                    <div className="absolute bottom-8 left-8 w-16 h-16 border-b-4 border-l-4 border-white/30 rounded-bl-3xl"></div>
-                    <div className="absolute bottom-8 right-8 w-16 h-16 border-b-4 border-r-4 border-white/30 rounded-br-3xl"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        
 
             {/* Leadership Team Grid */}
             <div>
@@ -309,7 +178,7 @@ export default function AboutUs() {
                 className="text-5xl md:text-6xl font-black text-center mb-12 tracking-tight"
                 style={{ fontFamily: "'Oswald', 'Impact', sans-serif" }}
               >
-                <span className="bg-gradient-to-r from-red-400 to-black bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-red-400 to-orange-500 bg-clip-text text-transparent">
                   LEADERSHIP TEAM
                 </span>
               </h3>
@@ -328,14 +197,12 @@ export default function AboutUs() {
                     <div className="relative h-[480px] rounded-3xl overflow-hidden transform-gpu transition-all duration-500 hover:scale-105 hover:-rotate-1">
                       {/* Card Background */}
                       <div 
-                        className="absolute inset-0 opacity-90 group-hover:opacity-100 transition-opacity duration-500"
-                        style={{
-                          background: `linear-gradient(135deg, ${member.color} 0%, #000 100%)`
-                        }}
+                        className="absolute bg-gradient-to-r from-red-600 via-red-500 to-orange-600 inset-0 opacity-90 group-hover:opacity-100 transition-opacity duration-500"
+                        
                       ></div>
 
                       {/* Hover Glow */}
-                      <div className="absolute -inset-1 bg-gradient-to-r from-red-600 via-red-500 to-red-600 rounded-3xl blur opacity-0 group-hover:opacity-50 transition-opacity duration-500"></div>
+                      <div className="absolute -inset-1 bg-gradient-to-r from-orange-600 via-red-500 to-red-600 rounded-3xl blur opacity-0 group-hover:opacity-50 transition-opacity duration-500"></div>
 
                       {/* Content */}
                       <div className="relative h-full p-8 flex flex-col">

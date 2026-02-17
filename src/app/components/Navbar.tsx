@@ -122,6 +122,12 @@ const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({
             </Link>
           </div>
 
+          <div>
+            <a href="/pages/about" className="text-red-500 hover:text-red-700 font-medium">
+              About Us
+            </a>
+          </div>
+
        
 
           {/* Right Icons */}

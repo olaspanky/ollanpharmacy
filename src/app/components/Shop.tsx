@@ -12,7 +12,7 @@ import { useRouter } from "next/navigation";
 import api from "@/src/lib/api";
 import CheckoutModal from "./CheckoutModal";
 import SkeletonLoader from "./SkeletonLoader";
-
+import TestimonialSlider from "./Testimonialslider";
 
 interface CartItem {
   productId: Product;
@@ -1132,6 +1132,8 @@ const PharmacyApp: React.FC = () => {
 </div>
                 );
               })}
+
+             
             </div>
           ) : (
             <div className="text-center py-12">
@@ -1139,6 +1141,10 @@ const PharmacyApp: React.FC = () => {
             </div>
           )}
         </div>
+
+         <div>
+                <TestimonialSlider/>
+                </div>
       </main>
     
       <QuantityModal />
