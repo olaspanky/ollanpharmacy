@@ -18,7 +18,10 @@ import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
 import { useRouter } from "next/navigation";
 
-const navLinks = [{ name: "Home", href: "/" }];
+const navLinks = [
+  { name: "Home", href: "/" },
+  { name: "About", href: "/pages/about" }
+];
 
 const categories = [
   "All Categories",
@@ -122,11 +125,7 @@ const Navbar: React.FC<{ links?: { name: string; href: string }[] }> = ({
             </Link>
           </div>
 
-          <div>
-            <a href="/pages/about" className="text-red-500 hover:text-red-700 font-medium">
-              About Us
-            </a>
-          </div>
+       
 
        
 

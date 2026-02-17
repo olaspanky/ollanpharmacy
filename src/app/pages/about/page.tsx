@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, FC } from 'react';
 import Image from 'next/image';
 import i1 from "../../../../public/img/o2.png"
 import i2 from "../../../../public/img/o3.png"
@@ -19,6 +19,42 @@ interface TeamMember {
   initials: string;
 }
 
+/* ─── Truncated Bio ─────────────────────────────────────────────────────────── */
+
+const TruncatedBio: FC<{ text: string; limit?: number }> = ({ text, limit = 20 }) => {
+  const [expanded, setExpanded] = useState(false);
+
+  const words = text.trim().split(/\s+/);
+  const isTruncatable = words.length > limit;
+  const displayed =
+    expanded || !isTruncatable ? text : words.slice(0, limit).join(' ') + '…';
+
+  return (
+    <>
+      <p
+        className="text-red-50 text-sm leading-relaxed opacity-90 group-hover:opacity-100 transition-opacity duration-500"
+        style={{ fontFamily: "'Lato', sans-serif" }}
+      >
+        {displayed}
+      </p>
+      {isTruncatable && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation(); // prevent card hover side-effects
+            setExpanded((p) => !p);
+          }}
+          className="mt-2 text-xs font-bold text-white/70 hover:text-white underline underline-offset-2 transition-colors duration-200"
+          style={{ fontFamily: "'Lato', sans-serif" }}
+        >
+          {expanded ? 'See less' : 'See more'}
+        </button>
+      )}
+    </>
+  );
+};
+
+/* ─── Main Component ────────────────────────────────────────────────────────── */
+
 export default function AboutUs() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [activeCard, setActiveCard] = useState<number | null>(null);
@@ -27,34 +63,27 @@ export default function AboutUs() {
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
-    
     window.addEventListener('mousemove', handleMouseMove);
-    
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-    };
+    return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-
-
   const teamMembers: TeamMember[] = [
-
     {
-    id: 1,
-    name: "Oladejo Olakareem",
-    role: "Chief Executive Officer",
-    bio: "A second-generation CEO, Oladejo grew up inside the Ollan Pharmacy business and now leads its evolution into a modern, tech-enabled healthcare company. He is focused on using technology, data, and operational excellence to expand access to quality medicines and food while keeping community trust at the center of everything.",
-    color: "#dc2626",
-      imageUrl: i1, // Replace with actual image path
-    initials: "SM"
-  },
+      id: 1,
+      name: "Oladejo Olakareem",
+      role: "Chief Executive Officer",
+      bio: "A second-generation CEO, Oladejo grew up inside the Ollan Pharmacy business and now leads its evolution into a modern, tech-enabled healthcare company. He is focused on using technology, data, and operational excellence to expand access to quality medicines and food while keeping community trust at the center of everything.",
+      color: "#dc2626",
+      imageUrl: i1,
+      initials: "SM"
+    },
     {
       id: 2,
       name: "Abdulkarerm Ajolayo Olakareem",
       role: "COO",
       bio: "Operations mastermind scaling efficiency and building sustainable growth frameworks.",
       color: "#b91c1c",
-      imageUrl: i2, // Replace with actual image path
+      imageUrl: i2,
       initials: "MC"
     },
     {
@@ -63,36 +92,35 @@ export default function AboutUs() {
       role: "CTO",
       bio: "Tech pioneer architecting tomorrow's solutions with cutting-edge engineering.",
       color: "#991b1b",
-      imageUrl: i3, // Replace with actual image path
+      imageUrl: i3,
       initials: "AR"
     },
     {
       id: 4,
       name: "Muizat Busari,",
       role: "Product Manager",
-      bio: "While her journey with the company began more recently, her deep interest in the intersection of healthcare and brand storytelling has made her a vital part of the firm’s digital transformation",
+      bio: "While her journey with the company began more recently, her deep interest in the intersection of healthcare and brand storytelling has made her a vital part of the firm's digital transformation",
       color: "#dc2626",
-      imageUrl: i4, // Replace with actual image path
+      imageUrl: i4,
       initials: "JP"
     },
     {
       id: 5,
       name: "Balogun Lateef",
       role: "Operations and Digital Marketer",
-      bio: "Balogun Lateef currently works at Ollan Pharmacy and Supermarket, where he improves operations, increases visibility, and drives sustainable growth across the pharmacy. ",
+      bio: "Balogun Lateef currently works at Ollan Pharmacy and Supermarket, where he improves operations, increases visibility, and drives sustainable growth across the pharmacy.",
       color: "#b91c1c",
-      imageUrl: i5, // Replace with actual image path
+      imageUrl: i5,
       initials: "EW"
     },
-  
   ];
 
   return (
-    <div className="min-h-screen  text-black overflow-hidden relative">
+    <div className="min-h-screen text-black overflow-hidden relative">
       {/* Animated Background */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-white"></div>
-        <div 
+        <div
           className="absolute w-[1000px] h-[1000px] rounded-full blur-[150px] opacity-20"
           style={{
             background: 'radial-gradient(circle, #ef4444 0%, transparent 70%)',
@@ -101,13 +129,16 @@ export default function AboutUs() {
             transition: 'left 0.3s ease-out, top 0.3s ease-out'
           }}
         ></div>
-        
+
         {/* Animated Grid Pattern */}
         <div className="absolute inset-0 opacity-5">
-          <div style={{
-            backgroundImage: 'linear-gradient(#ef4444 1px, transparent 1px), linear-gradient(90deg, #ef4444 1px, transparent 1px)',
-            backgroundSize: '50px 50px'
-          }} className="w-full h-full"></div>
+          <div
+            style={{
+              backgroundImage: 'linear-gradient(#ef4444 1px, transparent 1px), linear-gradient(90deg, #ef4444 1px, transparent 1px)',
+              backgroundSize: '50px 50px'
+            }}
+            className="w-full h-full"
+          ></div>
         </div>
 
         {/* Floating Particles */}
@@ -134,18 +165,15 @@ export default function AboutUs() {
           <div className="max-w-7xl w-full">
             {/* Main Title */}
             <div className="text-center mb-20">
-            
-
-              <h1 
+              <h1
                 className="text-8xl md:text-9xl lg:text-[5rem] font-black mb-8 relative leading-none"
                 style={{ fontFamily: "'Bebas Neue', 'Impact', sans-serif" }}
               >
-              
                 <span className="bg-gradient-to-r from-red-400 to-orange-500 bg-clip-text text-transparent">
                   THE TEAM
                 </span>
               </h1>
-              
+
               {/* Animated Line */}
               <div className="flex justify-center gap-2 mb-8">
                 {[...Array(7)].map((_, i) => (
@@ -160,7 +188,7 @@ export default function AboutUs() {
                 ))}
               </div>
 
-              <p 
+              <p
                 className="text-2xl md:text-3xl text-red-300 max-w-4xl mx-auto leading-relaxed tracking-wide"
                 style={{ fontFamily: "'Crimson Pro', 'Georgia', serif" }}
               >
@@ -169,12 +197,9 @@ export default function AboutUs() {
               </p>
             </div>
 
-            {/* CEO Spotlight - HERO CARD */}
-        
-
             {/* Leadership Team Grid */}
             <div>
-              <h3 
+              <h3
                 className="text-5xl md:text-6xl font-black text-center mb-12 tracking-tight"
                 style={{ fontFamily: "'Oswald', 'Impact', sans-serif" }}
               >
@@ -188,35 +213,29 @@ export default function AboutUs() {
                   <div
                     key={member.id}
                     className="group relative"
-                    style={{
-                      animation: `slideUp 0.6s ease-out ${(index + 1) * 0.1}s both`
-                    }}
+                    style={{ animation: `slideUp 0.6s ease-out ${(index + 1) * 0.1}s both` }}
                     onMouseEnter={() => setActiveCard(member.id)}
                     onMouseLeave={() => setActiveCard(null)}
                   >
-                    <div className="relative h-[480px] rounded-3xl overflow-hidden transform-gpu transition-all duration-500 hover:scale-105 hover:-rotate-1">
+                    <div className="relative rounded-3xl overflow-hidden transform-gpu transition-all duration-500 hover:scale-105 hover:-rotate-1">
                       {/* Card Background */}
-                      <div 
-                        className="absolute bg-gradient-to-r from-red-600 via-red-500 to-orange-600 inset-0 opacity-90 group-hover:opacity-100 transition-opacity duration-500"
-                        
-                      ></div>
+                      <div className="absolute bg-gradient-to-r from-red-600 via-red-500 to-orange-600 inset-0 opacity-90 group-hover:opacity-100 transition-opacity duration-500"></div>
 
                       {/* Hover Glow */}
                       <div className="absolute -inset-1 bg-gradient-to-r from-orange-600 via-red-500 to-red-600 rounded-3xl blur opacity-0 group-hover:opacity-50 transition-opacity duration-500"></div>
 
                       {/* Content */}
-                      <div className="relative h-full p-8 flex flex-col">
+                      <div className="relative p-8 flex flex-col">
                         {/* Role Badge */}
                         <div className="flex justify-between items-start mb-6">
                           <div className="bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20">
-                            <span 
-                              className="text-xs font-bold tracking-widest uppercase"
+                            <span
+                              className="text-xs font-bold tracking-widest uppercase text-white"
                               style={{ fontFamily: "'Space Mono', monospace" }}
                             >
                               {member.role}
                             </span>
                           </div>
-                          
                           <div className="w-12 h-12 border-t-2 border-r-2 border-white/30 rounded-tr-2xl group-hover:border-red-400 transition-colors duration-500"></div>
                         </div>
 
@@ -225,15 +244,12 @@ export default function AboutUs() {
                           <div className="absolute inset-0 rounded-full border-2 border-white/20 group-hover:border-red-400 transition-colors duration-500"></div>
                           <div className="absolute inset-2 rounded-full overflow-hidden bg-gradient-to-br from-white to-red-50 shadow-xl">
                             <div className="relative w-full h-full">
-                              <Image 
-                                src={member.imageUrl} 
+                              <Image
+                                src={member.imageUrl}
                                 alt={`${member.name} - ${member.role}`}
                                 className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
+                                onError={(e) => { e.currentTarget.style.display = 'none'; }}
                               />
-                            
                             </div>
                           </div>
                           {/* Decorative ring */}
@@ -242,18 +258,15 @@ export default function AboutUs() {
 
                         {/* Name and Bio */}
                         <div className="mt-auto text-center">
-                          <h4 
-                            className="text-3xl font-white text-white mb-3 leading-none transform group-hover:scale-105 transition-transform duration-500"
+                          <h4
+                            className="text-3xl text-white mb-3 leading-none transform group-hover:scale-105 transition-transform duration-500"
                             style={{ fontFamily: "'Oswald', 'Impact', sans-serif" }}
                           >
                             {member.name}
                           </h4>
-                          <p 
-                            className="text-red-50 text-sm leading-relaxed opacity-90 group-hover:opacity-100 transition-opacity duration-500"
-                            style={{ fontFamily: "'Lato', sans-serif" }}
-                          >
-                            {member.bio}
-                          </p>
+
+                          {/* ← Bio with 20-word truncation */}
+                          <TruncatedBio text={member.bio} limit={20} />
                         </div>
 
                         {/* Decorative Circles */}
@@ -269,120 +282,28 @@ export default function AboutUs() {
             </div>
           </div>
         </section>
-
-        {/* Stats Section */}
-        {/* <section className="relative py-32 px-6 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-red-700 to-red-800"></div>
-          <div className="absolute inset-0 opacity-10">
-            <div style={{
-              backgroundImage: `repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.1) 20px, rgba(255,255,255,0.1) 40px)`
-            }} className="w-full h-full"></div>
-          </div>
-
-          <div className="relative max-w-7xl mx-auto text-center">
-            <h2 
-              className="text-6xl md:text-7xl font-black mb-20 tracking-tight text-white"
-              style={{ fontFamily: "'Bebas Neue', 'Impact', sans-serif" }}
-            >
-              BY THE NUMBERS
-            </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              {[
-                { value: '500+', label: 'Projects Delivered' },
-                { value: '50+', label: 'Team Members' },
-                { value: '15+', label: 'Years Experience' },
-                { value: '98%', label: 'Client Satisfaction' }
-              ].map((stat, i) => (
-                <div 
-                  key={i}
-                  className="bg-white/10 backdrop-blur-md rounded-3xl p-8 border-2 border-white/20 hover:border-white/50 transition-all duration-500 hover:scale-105"
-                  style={{
-                    animation: `slideUp 0.6s ease-out ${i * 0.1}s both`
-                  }}
-                >
-                  <div 
-                    className="text-6xl md:text-7xl font-black text-white mb-4"
-                    style={{ fontFamily: "'Bebas Neue', 'Impact', sans-serif" }}
-                  >
-                    {stat.value}
-                  </div>
-                  <div className="text-red-100 text-lg font-semibold">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section> */}
-
-        {/* CTA Section */}
-        {/* <section className="py-32 px-6 bg-black">
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 
-              className="text-6xl md:text-7xl font-black mb-8 bg-gradient-to-r from-red-500 to-white bg-clip-text text-transparent"
-              style={{ fontFamily: "'Bebas Neue', 'Impact', sans-serif" }}
-            >
-              Join Our Journey
-            </h2>
-            <p className="text-2xl text-gray-400 mb-12" style={{ fontFamily: "'Lato', sans-serif" }}>
-              We're always looking for talented individuals who share our passion for excellence.
-            </p>
-            <button className="group relative bg-red-600 hover:bg-red-700 text-white font-black px-12 py-6 rounded-full transition-all duration-500 text-xl hover:scale-105 shadow-2xl hover:shadow-red-500/50 overflow-hidden">
-              <span className="relative z-10" style={{ fontFamily: "'Oswald', sans-serif" }}>VIEW OPEN POSITIONS</span>
-              <div className="absolute inset-0 bg-gradient-to-r from-red-700 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-            </button>
-          </div>
-        </section> */}
       </div>
 
       {/* Custom Animations */}
       <style jsx>{`
         @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
+          from { opacity: 0; transform: translateY(30px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-
         @keyframes orbit {
-          from {
-            transform: translate(-50%, -50%) rotate(0deg) translateY(-140px);
-          }
-          to {
-            transform: translate(-50%, -50%) rotate(360deg) translateY(-140px);
-          }
+          from { transform: translate(-50%, -50%) rotate(0deg) translateY(-140px); }
+          to   { transform: translate(-50%, -50%) rotate(360deg) translateY(-140px); }
         }
-
         @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
+          from { transform: rotate(0deg); }
+          to   { transform: rotate(360deg); }
         }
-
-        .animate-spin-slow {
-          animation: spin-slow 20s linear infinite;
-        }
-
+        .animate-spin-slow { animation: spin-slow 20s linear infinite; }
         @keyframes scanline {
-          0% {
-            transform: translateY(-100%);
-          }
-          100% {
-            transform: translateY(100%);
-          }
+          0%   { transform: translateY(-100%); }
+          100% { transform: translateY(100%); }
         }
-
-        .animate-scanline {
-          animation: scanline 8s linear infinite;
-        }
+        .animate-scanline { animation: scanline 8s linear infinite; }
       `}</style>
     </div>
   );
