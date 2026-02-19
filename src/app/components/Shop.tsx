@@ -13,6 +13,7 @@ import api from "@/src/lib/api";
 import CheckoutModal from "./CheckoutModal";
 import SkeletonLoader from "./SkeletonLoader";
 import TestimonialSlider from "./Testimonialslider";
+import { StatsStrip } from "./StatsStrip";
 
 interface CartItem {
   productId: Product;
@@ -1019,6 +1020,7 @@ const PharmacyApp: React.FC = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+       
         <div className="mb-8">
           <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-4 text-center">
             Your <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">Groceries</span> Delivered
@@ -1026,6 +1028,10 @@ const PharmacyApp: React.FC = () => {
           <p className="text-gray-600 text-center text-lg max-w-2xl mx-auto">
             Fresh groceries and pharmacy essentials delivered to your doorstep in minutes
           </p>
+        </div>
+
+         <div>
+          <StatsStrip/>
         </div>
 
       

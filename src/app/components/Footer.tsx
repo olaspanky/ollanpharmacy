@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const OllanFooter = () => {
-  const [hoveredLink, setHoveredLink] = useState(null);
+  const [hoveredLink, setHoveredLink] = useState<string | null>(null);
 
   const quickLinks = [
     { label: "Home", href: "/pages/home" },
@@ -61,407 +61,136 @@ const OllanFooter = () => {
   ];
 
   return (
-    <>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap');
-
-        .ollan-footer {
-          --red-deep: #1a0505;
-          --red-mid: #7a1010;
-          --red-accent: #c0392b;
-          --red-light: #e74c3c;
-          --orange: #e8620a;
-          --orange-light: #f7934a;
-          --cream: #fff5f0;
-          --white: #ffffff;
-          --text-muted: rgba(255, 245, 240, 0.55);
-
-          background: var(--red-deep);
-          font-family: 'DM Sans', sans-serif;
-          color: var(--cream);
-          position: relative;
-          overflow: hidden;
-        }
-
-        .ollan-footer::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background:
-            radial-gradient(ellipse 60% 40% at 80% 10%, rgba(232, 98, 10, 0.18) 0%, transparent 60%),
-            radial-gradient(ellipse 40% 60% at 10% 80%, rgba(192, 57, 43, 0.12) 0%, transparent 50%);
-          pointer-events: none;
-        }
-
-        .footer-top-bar {
-          background: var(--red-mid);
-          padding: 0 2.5rem;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          border-bottom: 1px solid rgba(232, 98, 10, 0.4);
-        }
-
-        .footer-brand {
-          display: flex;
-          align-items: center;
-          gap: 0.85rem;
-          padding: 1.25rem 0;
-        }
-
-        .brand-pill {
-          background: var(--orange);
-          color: var(--white);
-          width: 42px;
-          height: 42px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-family: 'Playfair Display', serif;
-          font-weight: 600;
-          font-size: 1.15rem;
-          flex-shrink: 0;
-        }
-
-        .brand-name {
-          font-family: 'Playfair Display', serif;
-          font-size: 1.3rem;
-          font-weight: 600;
-          letter-spacing: 0.02em;
-          color: var(--white);
-        }
-
-        .brand-tagline {
-          font-size: 0.7rem;
-          color: var(--orange-light);
-          letter-spacing: 0.12em;
-          text-transform: uppercase;
-          margin-top: 1px;
-        }
-
-        .rc-badge {
-          font-size: 0.72rem;
-          color: var(--text-muted);
-          letter-spacing: 0.06em;
-        }
-
-        .footer-main {
-          display: grid;
-          grid-template-columns: 1.6fr 1fr 1fr 1fr;
-          gap: 3rem;
-          padding: 3rem 2.5rem 2.5rem;
-          position: relative;
-        }
-
-        .footer-section-title {
-          font-family: 'Playfair Display', serif;
-          font-size: 0.85rem;
-          font-weight: 600;
-          letter-spacing: 0.14em;
-          text-transform: uppercase;
-          color: var(--orange-light);
-          margin: 0 0 1.2rem;
-          padding-bottom: 0.65rem;
-          border-bottom: 1px solid rgba(232, 98, 10, 0.35);
-          position: relative;
-        }
-
-        .footer-section-title::after {
-          content: '';
-          position: absolute;
-          bottom: -1px;
-          left: 0;
-          width: 28px;
-          height: 2px;
-          background: var(--orange);
-        }
-
-        /* Contact */
-        .contact-item {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.7rem;
-          margin-bottom: 0.85rem;
-          font-size: 0.875rem;
-          color: var(--cream);
-          line-height: 1.55;
-        }
-
-        .contact-icon {
-          color: var(--orange-light);
-          flex-shrink: 0;
-          margin-top: 2px;
-        }
-
-        .contact-link {
-          color: var(--cream);
-          text-decoration: none;
-          transition: color 0.2s;
-        }
-
-        .contact-link:hover {
-          color: var(--orange-light);
-        }
-
-        /* Quick Links */
-        .footer-links {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 0.55rem;
-        }
-
-        .footer-link-item a {
-          color: var(--cream);
-          text-decoration: none;
-          font-size: 0.875rem;
-          display: flex;
-          align-items: center;
-          gap: 0.45rem;
-          transition: color 0.2s, gap 0.2s;
-          opacity: 0.85;
-        }
-
-        .footer-link-item a::before {
-          content: '→';
-          font-size: 0.7rem;
-          color: var(--orange);
-          transition: transform 0.2s;
-        }
-
-        .footer-link-item a:hover {
-          color: var(--orange-light);
-          opacity: 1;
-          gap: 0.65rem;
-        }
-
-        .footer-link-item a:hover::before {
-          transform: translateX(3px);
-        }
-
-        /* Services */
-        .services-list {
-          list-style: none;
-          padding: 0;
-          margin: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 0.55rem;
-        }
-
-        .service-item {
-          font-size: 0.875rem;
-          color: var(--cream);
-          opacity: 0.85;
-          display: flex;
-          align-items: center;
-          gap: 0.5rem;
-        }
-
-        .service-dot {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: var(--orange-light);
-          flex-shrink: 0;
-        }
-
-        /* Social */
-        .social-grid {
-          display: flex;
-          flex-direction: column;
-          gap: 0.6rem;
-        }
-
-        .social-link {
-          display: flex;
-          align-items: center;
-          gap: 0.65rem;
-          color: var(--cream);
-          text-decoration: none;
-          font-size: 0.875rem;
-          opacity: 0.85;
-          padding: 0.4rem 0.6rem;
-          border-radius: 6px;
-          border: 1px solid transparent;
-          transition: all 0.22s;
-        }
-
-        .social-link:hover {
-          opacity: 1;
-          border-color: rgba(232, 98, 10, 0.45);
-          background: rgba(255,255,255,0.04);
-          color: var(--orange-light);
-        }
-
-        /* Bottom Bar */
-        .footer-bottom {
-          border-top: 1px solid rgba(255,255,255,0.08);
-          padding: 1.1rem 2.5rem;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          position: relative;
-        }
-
-        .footer-copyright {
-          font-size: 0.78rem;
-          color: var(--text-muted);
-        }
-
-        .footer-legal {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-        }
-
-        .legal-link {
-          color: var(--text-muted);
-          text-decoration: none;
-          font-size: 0.78rem;
-          transition: color 0.2s;
-        }
-
-        .legal-link:hover {
-          color: var(--orange-light);
-        }
-
-        .legal-divider {
-          width: 1px;
-          height: 12px;
-          background: rgba(255,255,255,0.15);
-        }
-
-        /* Decorative cross */
-        .deco-cross {
-          position: absolute;
-          right: 2.5rem;
-          top: 50%;
-          transform: translateY(-50%);
-          opacity: 0.06;
-          pointer-events: none;
-          font-size: 5rem;
-          color: var(--white);
-          line-height: 1;
-        }
-
-        @media (max-width: 900px) {
-          .footer-main {
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            padding: 2.5rem 1.5rem 2rem;
-          }
-          .footer-top-bar {
-            padding: 0 1.5rem;
-          }
-          .footer-bottom {
-            padding: 1rem 1.5rem;
-            flex-direction: column;
-            gap: 0.75rem;
-            text-align: center;
-          }
-        }
-
-        @media (max-width: 560px) {
-          .footer-main {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
-
-      <footer className="bg-gradient-to-r from-red-500 to-orange-700 text-cream relative overflow-hidden ">
-        {/* Top brand bar */}
-       
-
-        {/* Main grid */}
-        <div className="footer-main">
-          {/* Contact */}
-          <div>
-            <h4 className="footer-section-title">Contact Us</h4>
-            <div className="contact-item">
-              <span className="contact-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
-                  <circle cx="12" cy="10" r="3" />
-                </svg>
-              </span>
-              <span>No. 62 Iwo Road, Opposite Ibadan North East Secretariat, Ibadan, Oyo State, Nigeria</span>
-            </div>
-            <div className="contact-item">
-              <span className="contact-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.8a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.6a16 16 0 0 0 6 6l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 18l.19-1.08z" />
-                </svg>
-              </span>
-              <a href="tel:+2349040788398" className="contact-link">+234 904 078 8398</a>
-            </div>
-            <div className="contact-item">
-              <span className="contact-icon">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-                  <polyline points="22,6 12,13 2,6" />
-                </svg>
-              </span>
-              <a href="mailto:services@ollanpharmacy.ng" className="contact-link">services@ollanpharmacy.ng</a>
-            </div>
+    <footer className="bg-white border-t border-gray-200 font-sans">
+      {/* Top brand bar */}
+      <div className="bg-gray-50 px-4 sm:px-8 lg:px-10 flex items-center justify-between border-b border-gray-200">
+        <div className="flex items-center gap-3 py-4">
+          <div className="bg-orange-600 text-white w-10 h-10 rounded-full flex items-center justify-center font-serif font-semibold text-base flex-shrink-0">
+            O
           </div>
-
-          {/* Quick Links */}
           <div>
-            <h4 className="footer-section-title">Quick Links</h4>
-            <ul className="footer-links">
-              {quickLinks.map((link) => (
-                <li key={link.label} className="footer-link-item">
-                  <a href={link.href}>{link.label}</a>
-                </li>
-              ))}
-            </ul>
+            <div className="font-serif text-lg font-semibold text-gray-900">OLLAN PHARMACY</div>
+            <div className="text-xs text-gray-500 uppercase tracking-wider">Committed to care</div>
           </div>
+        </div>
+        <div className="text-xs text-gray-500">RC 69,342</div>
+      </div>
 
-          {/* Services */}
-          <div>
-            <h4 className="footer-section-title">Services</h4>
-            <ul className="services-list">
-              {services.map((service) => (
-                <li key={service} className="service-item">
-                  <span className="service-dot" />
-                  {service}
-                </li>
-              ))}
-            </ul>
+      {/* Main grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 px-4 sm:px-8 lg:px-10 py-10">
+        {/* Contact */}
+        <div>
+          <h4 className="font-serif text-xs font-semibold tracking-wider uppercase text-orange-600 mb-4 pb-2 border-b border-orange-200 relative after:content-[''] after:absolute after:bottom-[-1px] after:left-0 after:w-7 after:h-0.5 after:bg-orange-600">
+            Contact Us
+          </h4>
+          <div className="flex items-start gap-2 mb-3 text-sm text-gray-700">
+            <span className="text-orange-400 flex-shrink-0 mt-0.5">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+            </span>
+            <span>No. 62 Iwo Road, Opposite Ibadan North East Secretariat, Ibadan, Oyo State, Nigeria</span>
           </div>
+          <div className="flex items-start gap-2 mb-3 text-sm text-gray-700">
+            <span className="text-orange-400 flex-shrink-0 mt-0.5">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 13.8a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 3h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 10.6a16 16 0 0 0 6 6l.95-.95a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 21.73 18l.19-1.08z" />
+              </svg>
+            </span>
+            <a href="tel:+2349040788398" className="hover:text-orange-600 border-b border-dotted border-transparent hover:border-orange-600 transition">
+              +234 904 078 8398
+            </a>
+          </div>
+          <div className="flex items-start gap-2 mb-3 text-sm text-gray-700">
+            <span className="text-orange-400 flex-shrink-0 mt-0.5">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <polyline points="22,6 12,13 2,6" />
+              </svg>
+            </span>
+            <a href="mailto:services@ollanpharmacy.ng" className="hover:text-orange-600 border-b border-dotted border-transparent hover:border-orange-600 transition">
+              services@ollanpharmacy.ng
+            </a>
+          </div>
+        </div>
 
-          {/* Social */}
-          <div>
-            <h4 className="footer-section-title">Social Media</h4>
-            <div className="social-grid">
-              {socialLinks.map((s) => (
-                <a key={s.name} href={s.href} className="social-link" target="_blank" rel="noopener noreferrer">
-                  {s.icon}
-                  <span>{s.name}</span>
+        {/* Quick Links */}
+        <div>
+          <h4 className="font-serif text-xs font-semibold tracking-wider uppercase text-orange-600 mb-4 pb-2 border-b border-orange-200 relative after:content-[''] after:absolute after:bottom-[-1px] after:left-0 after:w-7 after:h-0.5 after:bg-orange-600">
+            Quick Links
+          </h4>
+          <ul className="space-y-2">
+            {quickLinks.map((link) => (
+              <li key={link.label}>
+                <a
+                  href={link.href}
+                  className="text-sm text-gray-600 flex items-center gap-1 hover:text-orange-600 hover:gap-2 transition-all"
+                >
+                  <span className="text-orange-500 text-xs">→</span>
+                  {link.label}
                 </a>
-              ))}
-            </div>
-          </div>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Bottom bar */}
-        <div className="footer-bottom">
-          <p className="footer-copyright">
-            © 2023 Ollan Pharmacy · RC Number: 69,342 · All rights reserved.
-          </p>
-          <nav className="footer-legal">
-            <a href="/terms" className="legal-link">Terms and Conditions</a>
-            <div className="legal-divider" />
-            <a href="/privacy" className="legal-link">Privacy Policy</a>
-          </nav>
-          <div className="deco-cross">✚</div>
+        {/* Services */}
+        <div>
+          <h4 className="font-serif text-xs font-semibold tracking-wider uppercase text-orange-600 mb-4 pb-2 border-b border-orange-200 relative after:content-[''] after:absolute after:bottom-[-1px] after:left-0 after:w-7 after:h-0.5 after:bg-orange-600">
+            Services
+          </h4>
+          <ul className="space-y-2">
+            {services.map((service) => (
+              <li key={service} className="text-sm text-gray-600 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" />
+                {service}
+              </li>
+            ))}
+          </ul>
         </div>
-      </footer>
-    </>
+
+        {/* Social Media */}
+        <div>
+          <h4 className="font-serif text-xs font-semibold tracking-wider uppercase text-orange-600 mb-4 pb-2 border-b border-orange-200 relative after:content-[''] after:absolute after:bottom-[-1px] after:left-0 after:w-7 after:h-0.5 after:bg-orange-600">
+            Social Media
+          </h4>
+          <div className="space-y-1">
+            {socialLinks.map((s) => (
+              <a
+                key={s.name}
+                href={s.href}
+                className="flex items-center gap-3 text-sm text-gray-600 hover:text-orange-600 p-2 rounded-md border border-transparent hover:border-orange-200 hover:bg-orange-50/50 transition-all"
+                target="_blank"
+                rel="noopener noreferrer"
+                onMouseEnter={() => setHoveredLink(s.name)}
+                onMouseLeave={() => setHoveredLink(null)}
+              >
+                <span className={hoveredLink === s.name ? "text-orange-600" : "text-orange-400"}>
+                  {s.icon}
+                </span>
+                <span>{s.name}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="border-t border-gray-200 px-4 sm:px-8 lg:px-10 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-gray-500">
+        <p>© 2023 Ollan Pharmacy · RC Number: 69,342 · All rights reserved.</p>
+        <nav className="flex items-center gap-4">
+          <a href="/terms" className="hover:text-orange-600 border-b border-dotted border-transparent hover:border-orange-600 transition">
+            Terms and Conditions
+          </a>
+          <span className="w-px h-3 bg-gray-300" />
+          <a href="/privacy" className="hover:text-orange-600 border-b border-dotted border-transparent hover:border-orange-600 transition">
+            Privacy Policy
+          </a>
+        </nav>
+        <span className="text-5xl opacity-10 text-red-400 absolute right-10 pointer-events-none hidden lg:block">✚</span>
+      </div>
+    </footer>
   );
 };
 

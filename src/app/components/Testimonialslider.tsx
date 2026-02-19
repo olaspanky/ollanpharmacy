@@ -32,139 +32,139 @@ type SlideDirection = "left" | "right";
 const REVIEWS: Testimonial[] = [
   {
     id: 1,
-    name: "Sarah M.",
-    location: "New York, USA",
-    initials: "SM",
+    name: "Chioma A.",
+    location: "Queen Idia Hall, UI",
+    initials: "CA",
     avatarGradient: "linear-gradient(135deg,#fb923c,#ef4444)",
     rating: 5,
     date: "Jan 12, 2025",
-    title: "My prescriptions arrive before I even run out!",
+    title: "My malaria drugs arrived before my fever got worse!",
     review:
-      "I've been using this for my monthly medications and it's been a lifesaver. Delivered to my door in under 2 hours every single time. The packaging is discreet and professional.",
+      "I felt really unwell in the middle of the night and couldn't leave the hall. Ordered Coartem and Paracetamol from Ollan and they were at my hostel gate in under an hour. Genuinely saved me a terrible night.",
     helpful: 312,
     category: "medication",
     badge: "Top Reviewer",
     emoji: "💊",
-    orderItem: "Monthly Prescription Pack",
+    orderItem: "Coartem + Paracetamol 500mg",
   },
   {
     id: 2,
-    name: "James K.",
-    location: "London, UK",
-    initials: "JK",
+    name: "Emeka O.",
+    location: "Kuti Hall, UI",
+    initials: "EO",
     avatarGradient: "linear-gradient(135deg,#ef4444,#ea580c)",
     rating: 5,
     date: "Feb 3, 2025",
-    title: "Best jollof rice delivered right to my couch!",
+    title: "Got my garri, groundnut and tin tomatoes delivered same day!",
     review:
-      "Ordered dinner at 8 pm, arrived piping hot by 8:40. The food quality is outstanding — tastes exactly like the restaurant. My family now orders three times a week.",
+      "I was broke on time and needed foodstuffs urgently before my money arrived. Ordered garri, groundnut, canned tomatoes and Milo from Ollan. Everything arrived fresh and well-packaged. This app is a lifesaver for UI students.",
     helpful: 198,
     category: "food",
     badge: "Foodie",
-    emoji: "🍛",
-    orderItem: "Jollof Rice & Chicken",
+    emoji: "🛒",
+    orderItem: "Garri 2kg + Milo 400g + Tomatoes",
   },
   {
     id: 3,
-    name: "Priya R.",
-    location: "Toronto, Canada",
-    initials: "PR",
+    name: "Fatimah B.",
+    location: "Ranche Bello, UI",
+    initials: "FB",
     avatarGradient: "linear-gradient(135deg,#f97316,#facc15)",
     rating: 5,
     date: "Dec 28, 2024",
-    title: "One app for food AND meds — finally!",
+    title: "One app for drugs AND foodstuffs — finally!",
     review:
-      "I used to juggle four different apps. Now just one. Ordered my blood-pressure medication and a healthy dinner bowl in the same checkout. This is the future of delivery.",
+      "I used to take okada to the pharmacy on campus and another trip to the market. Now I order my Vitamin C, Alabukun and even my semovita and egusi all in one checkout. This is exactly what UI students needed.",
     helpful: 445,
     category: "both",
     badge: "Power User",
-    emoji: "🥗",
-    orderItem: "Wellness Bowl + Metformin",
+    emoji: "🥘",
+    orderItem: "Semovita 1kg + Egusi 250g + Vitamin C",
   },
   {
     id: 4,
-    name: "Daniel W.",
-    location: "Lagos, Nigeria",
+    name: "Damilola W.",
+    location: "Mozambique Hall, UI",
     initials: "DW",
     avatarGradient: "linear-gradient(135deg,#dc2626,#f97316)",
     rating: 5,
     date: "Jan 29, 2025",
-    title: "Midnight cravings? Absolutely no problem.",
+    title: "Exam season survival kit delivered to my door.",
     review:
-      "3 am suya craving hit hard. Placed my order, it was at my gate in 45 minutes. The team even called to confirm the spice level. Incredible attention to detail.",
+      "Midnight before my biochem exam and I needed Lucozade, cabin biscuits and ibuprofen badly. Placed the order and it arrived at my block in 40 minutes. Even called to confirm my room number. Top-tier service.",
     helpful: 276,
     category: "food",
     badge: "Night Owl",
-    emoji: "🍖",
-    orderItem: "Suya Platter",
+    emoji: "📚",
+    orderItem: "Lucozade + Cabin Biscuits + Ibuprofen",
   },
   {
     id: 5,
-    name: "Mia L.",
-    location: "Berlin, Germany",
-    initials: "ML",
+    name: "Ngozi E.",
+    location: "Abadina, UI",
+    initials: "NE",
     avatarGradient: "linear-gradient(135deg,#ea580c,#dc2626)",
     rating: 5,
     date: "Feb 10, 2025",
-    title: "My elderly mum gets her meds on time, every time.",
+    title: "My mum sets up my monthly drug refill from Abuja!",
     review:
-      "I set up recurring medication delivery for my mum who lives alone. The app pings me when it's delivered. It's given our whole family peace of mind we didn't know we needed.",
+      "My mum orders my asthma inhaler and iron supplements from Ollan remotely every month. She gets a notification when it's delivered to me. The peace of mind this gives our family is unreal.",
     helpful: 389,
     category: "medication",
     badge: "Family Hero",
     emoji: "❤️",
-    orderItem: "Recurring Prescription",
+    orderItem: "Salbutamol Inhaler + Feroglobin",
   },
   {
     id: 6,
-    name: "Kofi A.",
-    location: "Accra, Ghana",
-    initials: "KA",
+    name: "Kolade F.",
+    location: "Independence Hall, UI",
+    initials: "KF",
     avatarGradient: "linear-gradient(135deg,#eab308,#f97316)",
     rating: 5,
     date: "Feb 14, 2025",
-    title: "Valentine's dinner delivered in 30 minutes!",
+    title: "Stocked up my room for the whole week in one order!",
     review:
-      "Planned a surprise for my wife. It arrived warm, beautifully packaged, with a complimentary dessert. She was completely blown away. 10/10 would recommend.",
+      "Ordered rice, beans, palm oil, Indomie, sardines and seasoning cubes in one go. Delivered in neat bags right to my hostel. Cheaper than going to Agbowo market and no stress at all.",
     helpful: 521,
     category: "food",
-    badge: "Romantic",
-    emoji: "🌹",
-    orderItem: "Fine Dining Special",
+    badge: "Smart Shopper",
+    emoji: "🛍️",
+    orderItem: "Rice 5kg + Beans 2kg + Palm Oil 75cl",
   },
   {
     id: 7,
-    name: "Aisha T.",
-    location: "Nairobi, Kenya",
+    name: "Adaeze T.",
+    location: "Queen Idia Hall, UI",
     initials: "AT",
     avatarGradient: "linear-gradient(135deg,#f87171,#fb923c)",
     rating: 5,
     date: "Jan 5, 2025",
-    title: "Live tracking is worth the download alone.",
+    title: "They actually know how to handle insulin properly.",
     review:
-      "My insulin arrived in a temperature-controlled bag. They understand that some medications can't just be tossed in a regular bag. Professional, thorough, genuinely caring.",
+      "I was nervous about ordering my insulin online but Ollan delivered it in a proper cold-pack bag. They clearly understand medication handling. Professional and thorough — I won't go anywhere else.",
     helpful: 334,
     category: "medication",
     badge: "Health Champion",
     emoji: "💉",
-    orderItem: "Insulin + Cold Pack",
+    orderItem: "Insulin + Cold Pack Delivery",
   },
   {
     id: 8,
-    name: "Lucas B.",
-    location: "São Paulo, Brazil",
-    initials: "LB",
+    name: "Bolaji M.",
+    location: "Nnamdi Azikiwe Hall, UI",
+    initials: "BM",
     avatarGradient: "linear-gradient(135deg,#f97316,#ef4444)",
     rating: 5,
     date: "Feb 20, 2025",
-    title: "Weekly meal preps every Sunday — flawless.",
+    title: "Restocked my kitchen every Sunday — zero wahala.",
     review:
-      "Seven healthy portioned meals, always fresh, always on time. I've lost 8 kg since I started using this service three months ago. Best subscription I've ever had.",
+      "Every Sunday I order my provisions for the week from Ollan. Milo, Quaker Oats, canned fish, noodles, groundnut oil — all arrive fresh. I've been doing this for three months and not once has there been an issue.",
     helpful: 467,
     category: "food",
-    badge: "Fitness Freak",
+    badge: "Regular Customer",
     emoji: "💪",
-    orderItem: "Weekly Meal Prep ×7",
+    orderItem: "Weekly Provisions Bundle",
   },
 ];
 
@@ -757,25 +757,7 @@ const TestimonialSlider: FC = () => {
       </div>
 
       {/* ── STATS STRIP ── */}
-      <div style={{ width: "100%", maxWidth: 1100, padding: "0 20px", marginBottom: 36 }}>
-        <div className="stats-grid">
-          {stats.map((s) => (
-            <div
-              key={s.label}
-              style={{
-                background: "#fff", border: "1px solid #f3f4f6", borderRadius: 16,
-                padding: "16px 12px", textAlign: "center",
-                boxShadow: "0 2px 12px rgba(234,88,12,.06)",
-              }}
-            >
-              <div style={{ fontSize: 24, marginBottom: 4 }}>{s.icon}</div>
-              <div style={{ fontFamily: "'Sora',sans-serif", fontWeight: 800, fontSize: 20, color: "#111827" }}>{s.value}</div>
-              <div style={{ fontFamily: "'Nunito',sans-serif", fontSize: 11, color: "#9ca3af", marginTop: 2 }}>{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
+    
       {/* ── DESKTOP MARQUEE ── */}
       <div className="desktop-marquee" style={{ width: "100%" }}>
         <DesktopMarquee />
