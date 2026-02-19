@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect, useReducer, useCallback, useMemo } from "react";
-import { ShoppingCart, Plus, Minus, X, Search, Home, ShoppingBag, Star, Truck, Shield, Clock } from "lucide-react";
+import { ShoppingCart, Plus, Minus, X, Search, Home, ShoppingBag, Star, Truck, Shield, Clock, FileText } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import logo from "../../../public/ollogo.svg";
@@ -14,6 +14,7 @@ import CheckoutModal from "./CheckoutModal";
 import SkeletonLoader from "./SkeletonLoader";
 import TestimonialSlider from "./Testimonialslider";
 import { StatsStrip } from "./StatsStrip";
+import UploadPrescriptionModal from "./UploadPrescriptionModal"; // Import the prescription modal
 
 interface CartItem {
   productId: Product;
@@ -200,6 +201,9 @@ const PharmacyApp: React.FC = () => {
   const [categories, setCategories] = useState<string[]>(["All Products"]);
   const [isUnauthenticatedModalOpen, setIsUnauthenticatedModalOpen] = useState<boolean>(false);
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  
+  // State for prescription upload modal
+  const [isPrescriptionModalOpen, setIsPrescriptionModalOpen] = useState<boolean>(false);
 
   const UnauthenticatedModal = () => {
     const modalRef = useRef<HTMLDivElement>(null);
@@ -1000,21 +1004,43 @@ const PharmacyApp: React.FC = () => {
                 </span>
               </button>
             </div>
-            <button
-              onClick={() => setIsCartOpen(true)}
-              className="relative p-4 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl hover:from-red-600 hover:to-orange-600 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/30 group"
-              aria-label="Open cart"
-            >
-              <div className="relative">
-                <ShoppingCart size={24} />
-                {cart.length > 0 && (
-                  <span className="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg border-2 border-white">
-                    {cart.reduce((total, item) => total + item.quantity, 0)}
-                  </span>
-                )}
-              </div>
-              <div className="absolute inset-0 bg-white rounded-xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
-            </button>
+            
+            {/* Right side buttons - Cart and Prescription Upload */}
+            <div className="flex items-center gap-3">
+              {/* Prescription Upload Button - Only visible in Pharmacy mode */}
+              {viewMode === "Pharmacy" && (
+                <button
+                  onClick={() => {
+                    if (!user) {
+                      setIsUnauthenticatedModalOpen(true);
+                      return;
+                    }
+                    setIsPrescriptionModalOpen(true);
+                  }}
+                  className="relative group"
+                  aria-label="Upload prescription"
+                >
+                 
+                </button>
+              )}
+              
+              {/* Cart Button */}
+              <button
+                onClick={() => setIsCartOpen(true)}
+                className="relative p-4 bg-gradient-to-r from-red-500 to-orange-500 text-white rounded-xl hover:from-red-600 hover:to-orange-600 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-red-500/30 group"
+                aria-label="Open cart"
+              >
+                <div className="relative">
+                  <ShoppingCart size={24} />
+                  {cart.length > 0 && (
+                    <span className="absolute -top-3 -right-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full h-6 w-6 flex items-center justify-center shadow-lg border-2 border-white">
+                      {cart.reduce((total, item) => total + item.quantity, 0)}
+                    </span>
+                  )}
+                </div>
+                <div className="absolute inset-0 bg-white rounded-xl opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -1030,13 +1056,40 @@ const PharmacyApp: React.FC = () => {
           </p>
         </div>
 
-         <div>
+        <div>
           <StatsStrip/>
         </div>
 
-      
-
-      
+        {/* Pharmacy Category Pills - Only show in Pharmacy mode */}
+        {viewMode === "Pharmacy" && (
+          <div className="mb-8">
+            <div className="flex flex-col items-left justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Pharmacy Categories</h2>
+              <button
+                onClick={() => setIsPrescriptionModalOpen(true)}
+                className="text-sm text-red-500 hover:text-red-600 font-semibold flex items-center gap-1 my-5"
+              >
+                <FileText size={16} />
+                Upload Prescription
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {pharmacyCategories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+                    selectedCategory === category
+                      ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-md"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mb-12">
           <div className="flex items-center justify-between mb-6">
@@ -1057,100 +1110,97 @@ const PharmacyApp: React.FC = () => {
                     product.name.toLowerCase().includes('satchet')));
                 
                 return (
-                 <div
-  key={product._id}
-  className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 
-             border border-gray-100 hover:border-red-100 group
-             flex flex-col h-full"           // ← KEY CHANGES HERE
->
-  {/* Image container - fixed height */}
-  <div className="w-full h-40 rounded-lg mb-4 flex items-center justify-center 
-                   
-                  group-hover:from-red-50 group-hover:to-orange-50 
-                  transition-all duration-300">
-    <img
-      src={`${product.image}`}
-      alt={product.name}
-      className="h-40 w-40 object-contain group-hover:scale-105 transition-transform duration-300"
-      loading="lazy"
-    />
-  </div>
+                  <div
+                    key={product._id}
+                    className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 
+                               border border-gray-100 hover:border-red-100 group
+                               flex flex-col h-full"
+                  >
+                    {/* Image container - fixed height */}
+                    <div className="w-full h-40 rounded-lg mb-4 flex items-center justify-center 
+                                  group-hover:from-red-50 group-hover:to-orange-50 
+                                  transition-all duration-300">
+                      <img
+                        src={`${product.image}`}
+                        alt={product.name}
+                        className="h-40 w-40 object-contain group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                    </div>
 
-  {/* Content area - grows to push button down */}
-  <div className="flex flex-col flex-grow px-2 pb-4">
-    <h4 className="font-bold text-gray-900 mb-2 line-clamp-2 text-sm lg:text-base">
-      {product.name}
-    </h4>
+                    {/* Content area - grows to push button down */}
+                    <div className="flex flex-col flex-grow px-2 pb-4">
+                      <h4 className="font-bold text-gray-900 mb-2 line-clamp-2 text-sm lg:text-base">
+                        {product.name}
+                      </h4>
 
-    <div className="flex items-center justify-between mt-auto">
-      <p className="text-lg font-bold text-red-500">
-        ₦{product?.price.toLocaleString()}
-      </p>
-      <div className="flex items-center gap-2">
-        {product.stock > 0 ? (
-          <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
-        ) : (
-          <div className="h-2 w-2 rounded-full bg-red-500"></div>
-        )}
-        {hasBundle && product.stock > 0 && (
-          <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
-        )}
-      </div>
-    </div>
+                      <div className="flex items-center justify-between mt-auto">
+                        <p className="text-lg font-bold text-red-500">
+                          ₦{product?.price.toLocaleString()}
+                        </p>
+                        <div className="flex items-center gap-2">
+                          {product.stock > 0 ? (
+                            <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                          ) : (
+                            <div className="h-2 w-2 rounded-full bg-red-500"></div>
+                          )}
+                          {hasBundle && product.stock > 0 && (
+                            <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
+                          )}
+                        </div>
+                      </div>
 
-    {hasBundle && product.stock > 0 && (
-      <div className="mt-2">
-        {product.name.toLowerCase().includes('egg') && (
-          <p className="text-xs text-blue-600 font-medium">
-            🎁 Buy 3+ for 5% off
-          </p>
-        )}
-        {product.name.toLowerCase().includes('noodle') && (
-          <p className="text-xs text-blue-600 font-medium">
-            🎁 Buy 3+ for 5% off
-          </p>
-        )}
-        {(product.name.toLowerCase().includes('tomato') && 
-          (product.name.toLowerCase().includes('sachet') || 
-           product.name.toLowerCase().includes('satchet'))) && (
-          <p className="text-xs text-blue-600 font-medium">
-            🎁 Buy 10+ for 5% off
-          </p>
-        )}
-      </div>
-    )}
-  </div>
+                      {hasBundle && product.stock > 0 && (
+                        <div className="mt-2">
+                          {product.name.toLowerCase().includes('egg') && (
+                            <p className="text-xs text-blue-600 font-medium">
+                              🎁 Buy 3+ for 5% off
+                            </p>
+                          )}
+                          {product.name.toLowerCase().includes('noodle') && (
+                            <p className="text-xs text-blue-600 font-medium">
+                              🎁 Buy 3+ for 5% off
+                            </p>
+                          )}
+                          {(product.name.toLowerCase().includes('tomato') && 
+                            (product.name.toLowerCase().includes('sachet') || 
+                             product.name.toLowerCase().includes('satchet'))) && (
+                            <p className="text-xs text-blue-600 font-medium">
+                              🎁 Buy 10+ for 5% off
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
 
-  {/* Button always at bottom */}
-  <button
-    onClick={() => openQuantityModal(product)}
-    disabled={product.stock === 0}
-    className={`mx-2 mb-2 py-2.5 rounded-lg font-semibold text-sm 
-                transition-all duration-300 active:scale-95 ${
-      product.stock > 0
-        ? "bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600"
-        : "bg-gray-200 text-gray-500 cursor-not-allowed"
-    }`}
-    aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
-  >
-    {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
-  </button>
-</div>
+                    {/* Button always at bottom */}
+                    <button
+                      onClick={() => openQuantityModal(product)}
+                      disabled={product.stock === 0}
+                      className={`mx-2 mb-2 py-2.5 rounded-lg font-semibold text-sm 
+                                  transition-all duration-300 active:scale-95 ${
+                        product.stock > 0
+                          ? "bg-gradient-to-r from-red-500 to-orange-500 text-white hover:from-red-600 hover:to-orange-600"
+                          : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                      }`}
+                      aria-label={product.stock > 0 ? `Add ${product.name} to cart` : `${product.name} is out of stock`}
+                    >
+                      {product.stock > 0 ? "Add to Cart" : "Out of Stock"}
+                    </button>
+                  </div>
                 );
               })}
-
-             
             </div>
           ) : (
             <div className="text-center py-12">
-             <SkeletonLoader/>
+              <SkeletonLoader/>
             </div>
           )}
         </div>
 
-         <div>
-                <TestimonialSlider/>
-                </div>
+        <div>
+          <TestimonialSlider/>
+        </div>
       </main>
     
       <QuantityModal />
@@ -1170,6 +1220,12 @@ const PharmacyApp: React.FC = () => {
       />
       <OrderCompleteModal />
       <UnauthenticatedModal />
+      
+      {/* Prescription Upload Modal */}
+      <UploadPrescriptionModal 
+        isOpen={isPrescriptionModalOpen}
+        onClose={() => setIsPrescriptionModalOpen(false)}
+      />
     </div>
   );
 };
